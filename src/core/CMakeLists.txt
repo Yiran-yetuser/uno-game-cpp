@@ -1,3 +1,10 @@
+
+cmake_minimum_required(VERSION 3.10)
+
+
+project(UNO_Game LANGUAGES CXX)
+
+
 add_library(uno_core STATIC
     card.cpp
     dealer.cpp
@@ -9,7 +16,11 @@ add_library(uno_core STATIC
     game.cpp
 )
 
+
 target_include_directories(uno_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+
 target_compile_features(uno_core PUBLIC cxx_std_17)
+
 
 add_subdirectory(test)
