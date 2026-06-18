@@ -1,1 +1,1 @@
-// TODO: 实现main函数 - Qt应用程序入口，创建并显示MainWindow
+// TODO: 瀹炵幇main鍑芥暟 - Qt搴旂敤绋嬪簭鍏ュ彛锛屽垱寤哄苟鏄剧ずMainWindow
