@@ -19,6 +19,8 @@ Game::Game()
         topCard = deck.draw();
     } while (topCard.type != CardType::Number);
     currentColor = topCard.color;
+    // 将开局牌加入弃牌堆
+    deck.addDiscard(topCard);
 
     // 随机决定先手
     randomFirstPlayer();
@@ -85,9 +87,9 @@ bool Game::canPlayCard(Player *p, const Card &play) const
     // 无叠加罚牌，正常匹配规则
     if (play.color == currentColor)
         return true;
-    if (play.type == topCard.type)
+    if (play.type == getTopCard().type)
         return true;
-    if (play.type == CardType::Number && topCard.type == CardType::Number && play.number == topCard.number)
+    if (play.type == CardType::Number && getTopCard().type == CardType::Number && play.number == getTopCard().number)
         return true;
     return false;
 }
@@ -164,7 +166,7 @@ void Game::gameLoop()
         default:
             std::cout << "万能";
         }
-        std::cout << "\n场上底牌：" << topCard.toString() << std::endl;
+        std::cout << "\n场上底牌：" << getTopCard().toString() << std::endl;
         if (drawStack > 0)
             std::cout << "待叠加罚牌总数：" << drawStack << std::endl;
 
@@ -234,8 +236,11 @@ void Game::gameLoop()
                     continue;
                 }
 
+                // 将打出的牌加入弃牌堆
+                deck.addDiscard(hand[op]);
                 // 合法出牌
                 Card out = cur->playCard(op);
+
                 std::cout << "你打出：" << out.toString() << std::endl;
                 setTopCard(out);
 
@@ -287,7 +292,10 @@ void Game::gameLoop()
                 ai->drawCard(draw);
                 std::cout << ai->getName() << "无牌可出，抽一张牌" << std::endl;
             } else {
+                deck.addDiscard(ai->getHand()[playIdx]);
                 Card out = ai->playCard(playIdx);
+                // 将打出的牌加入弃牌堆
+
                 std::cout << ai->getName() << "打出：" << out.toString() << std::endl;
                 setTopCard(out);
 
