@@ -1,4 +1,3 @@
-// game.h 实现游戏，游戏主循环、回合管理、规则判定
 #ifndef GAME_H
 #define GAME_H
 #include "deck.h"
@@ -11,28 +10,33 @@ class Game
 private:
     Deck deck;
     std::vector<Player*> players;
-    Card topCard;          // 场上当前牌
-    int currentPlayerIdx;  // 当前行动玩家下标
-    int direction;          // 1顺向 -1逆向
+    Card topCard;
+    Color currentColor;
+    int currentPlayerIdx;
+    int direction;
+    int drawStack; // 叠加罚牌总数，+2/+4叠加记录
+
+    // 判断玩家手牌是否存在指定颜色
+    bool playerHasColor(Player* p, Color target) const;
+    // 玩家是否有可叠加的+2
+    bool playerHasDrawTwo(Player* p) const;
 public:
-    // 初始化：1人类玩家 + 3AI
     Game();
     ~Game();
-    // 开局发7张牌给所有人
     void initDeal();
-    // 切换下一位玩家
+    void randomFirstPlayer(); // 随机先手
     void nextPlayer();
-    // 获取当前场上顶牌
     Card getTopCard() const;
-    // 设置场上顶牌（出牌后更新）
+    Color getCurrentColor() const;
     void setTopCard(const Card& c);
-    // 获取当前玩家
+    void setCurrentColor(Color c);
     Player* getCurrentPlayer();
-    // 执行一张牌的特效（跳过、反转、+2、万能+4）
-    void executeCardEffect(const Card& played);
-    // 判断是否有人赢（手牌空）
+
+    // 判断当前牌是否合法可出
+    bool canPlayCard(Player* p, const Card& play) const;
+    // 打出牌后执行效果
+    void executeEffect(const Card& played);
     bool checkWin() const;
-    // 游戏主循环控制台交互
     void gameLoop();
 };
 #endif

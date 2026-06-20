@@ -13,8 +13,8 @@ Deck::~Deck() = default;
 void Deck::buildFullDeck()
 {
     cards.clear();
-    std::vector<Color> colors = { Color::Red, Color::Yellow, Color::Green, Color::Blue };
-    // ������ 0��1�ţ�1-9��2��
+    std::vector<Color> colors = {Color::Red, Color::Yellow, Color::Green, Color::Blue};
+    // 数字牌 0各1张，1-9各2张
     for (Color c : colors)
     {
         cards.emplace_back(c, CardType::Number, 0);
@@ -23,7 +23,7 @@ void Deck::buildFullDeck()
             cards.emplace_back(c, CardType::Number, num);
             cards.emplace_back(c, CardType::Number, num);
         }
-        // �����Ƹ�2��
+        // 功能牌各2张
         for (int i = 0; i < 2; ++i)
         {
             cards.emplace_back(c, CardType::Skip);
@@ -31,7 +31,7 @@ void Deck::buildFullDeck()
             cards.emplace_back(c, CardType::DrawTwo);
         }
     }
-    // ������4�ţ�����+4����
+    // 万能牌4张，万能+4四张
     for (int i = 0; i < 4; ++i)
     {
         cards.emplace_back(Color::Wild, CardType::Wild);
