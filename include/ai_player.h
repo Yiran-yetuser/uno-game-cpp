@@ -1,4 +1,4 @@
-// ai_player.h 缁ф壙 Player锛孉I鍐崇瓥閫昏緫
+// ai_player.h 实现AI玩家，包括AI玩家的牌组、出牌、牌组
 #ifndef AI_PLAYER_H
 #define AI_PLAYER_H
 #include "player.h"
