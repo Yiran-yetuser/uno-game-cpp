@@ -1,7 +1,17 @@
-#include "card.h"
+#include "game.h"
 #include <iostream>
+#include <windows.h>
 
-int main(int, char **)
+int main()
 {
-    std::cout << "Hello, from uno-game-cpp!\n";
+    // 只保留这两行，删掉 locale 相关代码
+    SetConsoleCP(65001);
+    SetConsoleOutputCP(65001);
+
+    Game game;
+    game.gameLoop();
+    std::cout << "按回车退出...";
+    std::cin.get();
+    std::cin.get();
+    return 0;
 }

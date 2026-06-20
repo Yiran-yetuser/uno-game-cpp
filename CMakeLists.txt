@@ -4,6 +4,9 @@ project(uno-game-cpp VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17) # C++17版本
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 新增两行：指定输入源码UTF8、程序输出字符串UTF8
+add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+
 add_executable(uno-game-cpp 
     src/main.cpp
     src/card.cpp
