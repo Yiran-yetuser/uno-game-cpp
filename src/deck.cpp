@@ -46,6 +46,9 @@ Card Deck::draw()
     if (drawPile.empty()) {
         reshuffleDiscard();
     }
+    if (drawPile.empty()) {
+        return Card(Color::Wild, CardType::Wild);
+    }
     Card res = drawPile.back();
     drawPile.pop_back();
     return res;

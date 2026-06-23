@@ -14,11 +14,21 @@ Game::Game()
     players.push_back(new AIPlayer("AI三号"));
 
     initDeal();
-    // 翻开局第一张，必须是数字牌
+    // 翻开局第一张，优先数字牌，最多尝试50次
+    int retry = 0;
     do {
         topCard = deck.draw();
-    } while (topCard.type != CardType::Number);
-    currentColor = topCard.color;
+        ++retry;
+    } while (topCard.type != CardType::Number && retry < 50);
+    // 如果翻到万能牌，随机选一个颜色
+    if (topCard.type == CardType::Wild || topCard.type == CardType::WildDrawFour) {
+        std::mt19937 rng((unsigned)time(nullptr));
+        std::uniform_int_distribution<> dist(0, 3);
+        Color colors[] = {Color::Red, Color::Yellow, Color::Green, Color::Blue};
+        currentColor = colors[dist(rng)];
+    } else {
+        currentColor = topCard.color;
+    }
     // 将开局牌加入弃牌堆
     deck.addDiscard(topCard);
 
@@ -68,21 +78,21 @@ bool Game::playerHasDrawTwo(Player *p) const
 
 bool Game::canPlayCard(Player *p, const Card &play) const
 {
-    // 万能、万能+4随时可出
-    if (play.type == CardType::Wild || play.type == CardType::WildDrawFour)
-        return true;
-
     // 有叠加罚牌时
     if (drawStack > 0) {
         // 已有+4叠加：只能出万能+4，+2不能叠+4
         if (drawStack >= 4) {
             return play.type == CardType::WildDrawFour;
         }
-        // 只有+2叠加：可继续叠+2
+        // 只有+2叠加：可继续叠+2或万能+4
         else {
-            return play.type == CardType::DrawTwo;
+            return play.type == CardType::DrawTwo || play.type == CardType::WildDrawFour;
         }
     }
+
+    // 万能、万能+4在无罚牌时随时可出
+    if (play.type == CardType::Wild || play.type == CardType::WildDrawFour)
+        return true;
 
     // 无叠加罚牌，正常匹配规则
     if (play.color == currentColor)
@@ -236,10 +246,10 @@ void Game::gameLoop()
                     continue;
                 }
 
-                // 将打出的牌加入弃牌堆
-                deck.addDiscard(hand[op]);
                 // 合法出牌
                 Card out = cur->playCard(op);
+                // 将打出的牌加入弃牌堆
+                deck.addDiscard(out);
 
                 std::cout << "你打出：" << out.toString() << std::endl;
                 setTopCard(out);
@@ -292,9 +302,9 @@ void Game::gameLoop()
                 ai->drawCard(draw);
                 std::cout << ai->getName() << "无牌可出，抽一张牌" << std::endl;
             } else {
-                deck.addDiscard(ai->getHand()[playIdx]);
                 Card out = ai->playCard(playIdx);
                 // 将打出的牌加入弃牌堆
+                deck.addDiscard(out);
 
                 std::cout << ai->getName() << "打出：" << out.toString() << std::endl;
                 setTopCard(out);
