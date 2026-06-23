@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO 纸牌游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-table {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            background: radial-gradient(ellipse at center, #2d5a3d 0%, #1a472a 100%);
+        }
+
+        /* === 四个方位玩家 === */
+        .player-area {
+            position: absolute;
+            color: white;
+            text-align: center;
+            z-index: 5;
+        }
+
+        /* ---------- 上方AI ---------- */
+        #area-north {
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #area-north .player-name {
+            font-size: 1em;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 20px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        #area-north .card-minis {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            margin-top: 6px;
+            flex-wrap: wrap;
+            max-width: 400px;
+        }
+
+        /* ---------- 右侧AI ---------- */
+        #area-east {
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #area-east .player-name {
+            font-size: 0.95em;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 14px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        #area-east .card-minis {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: center;
+            margin-top: 6px;
+            max-height: 180px;
+            overflow: hidden;
+        }
+
+        /* ---------- 左侧AI ---------- */
+        #area-west {
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        #area-west .player-name {
+            font-size: 0.95em;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 14px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+        #area-west .card-minis {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            align-items: center;
+            margin-top: 6px;
+            max-height: 180px;
+            overflow: hidden;
+        }
+
+        /* ---------- 下方玩家 ---------- */
+        #area-south {
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: none;
+        }
+        #area-south .player-name {
+            font-size: 1.05em;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 24px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+
+        /* 迷你卡牌背面 */
+        .mini-back {
+            width: 26px;
+            height: 38px;
+            object-fit: cover;
+            border-radius: 2px;
+            border: 1px solid white;
+            flex-shrink: 0;
+        }
+
+        /* 玩家当前回合高亮 */
+        .player-area.active .player-name {
+            background: linear-gradient(135deg, #ffd700, #ffed4e) !important;
+            color: #333 !important;
+            box-shadow: 0 0 20px rgba(255,215,0,0.8);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { box-shadow: 0 0 20px rgba(255,215,0,0.8); }
+            50% { box-shadow: 0 0 40px rgba(255,215,0,1); }
+        }
+        #area-south.active .player-name {
+            background: linear-gradient(135deg, #00e676, #69f0ae) !important;
+            box-shadow: 0 0 25px rgba(0,230,118,0.8);
+            animation: pulseGreen 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseGreen {
+            0%,100% { box-shadow: 0 0 25px rgba(0,230,118,0.8); }
+            50% { box-shadow: 0 0 50px rgba(0,230,118,1); }
+        }
+
+        .card-count {
+            font-size: 0.85em;
+            color: #ffd700;
+            margin-top: 2px;
+        }
+
+        /* === 中央牌堆 === */
+        .game-center {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            gap: 100px;
+            align-items: center;
+            z-index: 20;
+        }
+        .center-section {
+            text-align: center;
+        }
+        .center-label {
+            color: white;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 抽牌堆 */
+        .deck-img-wrap {
+            width: 110px;
+            height: 160px;
+            cursor: pointer;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            border: 3px solid white;
+            transition: transform 0.2s;
+        }
+        .deck-img-wrap:hover { transform: scale(1.06); }
+        .deck-img-wrap img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        /* 弃牌堆 */
+        .topcard-wrap {
+            width: 110px;
+            height: 160px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+            border: 3px solid white;
+        }
+        .topcard-wrap img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        .color-info {
+            margin-top: 8px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .color-dot {
+            display: inline-block;
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin: 0 5px;
+            border: 2px solid white;
+        }
+
+        /* === 手牌容器 - 关键修复 === */
+        #player-hand {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            align-items: flex-end !important;
+            min-height: 170px !important;
+            padding: 10px 20px !important;
+            margin: 0 auto !important;
+            max-width: 90vw !important;
+            overflow-x: auto !important;
+        }
+
+        .hand-card-wrap {
+            flex-shrink: 0 !important;
+            transition: transform 0.2s !important;
+            cursor: pointer !important;
+        }
+        .hand-card-wrap:hover { transform: translateY(-18px) scale(1.08); z-index: 100; }
+        .hand-card-wrap.disabled {
+            opacity: 0.45 !important;
+            cursor: not-allowed !important;
+        }
+        .hand-card-wrap.disabled:hover { transform: none !important; }
+
+        .hand-card-inner {
+            width: 100px !important;
+            height: 148px !important;
+            border-radius: 8px !important;
+            overflow: hidden !important;
+            border: 2px solid white !important;
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.4) !important;
+            background: #333 !important;
+            position: relative !important;
+        }
+        .hand-card-inner img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block !important;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        /* 黄色卡牌：overlay 遮罩压高光（只暗亮部，暗部影响小） */
+        .hand-card-wrap.card-yellow .hand-card-inner {
+            position: relative;
+        }
+        .hand-card-wrap.card-yellow .hand-card-inner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            border-radius: 8px;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+        .hand-card-wrap.card-yellow .hand-card-inner img {
+            filter: contrast(1.4) saturate(1.3);
+        }
+        /* 图片加载失败时的文字后备 */
+        .hand-card-inner .fallback-text {
+            display: none;
+            position: absolute;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .hand-card-inner img.error + .fallback-text,
+        .hand-card-inner img[src=""] + .fallback-text {
+            display: flex;
+        }
+
+        /* === 方向指示器（右上角） === */
+        .dir-box {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 200;
+            background: rgba(0,0,0,0.75);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            padding: 8px;
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dir-box svg { width: 100%; height: 100%; }
+        .dir-label {
+            position: fixed;
+            top: 80px;
+            right: 17px;
+            z-index: 200;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+            background: rgba(0,0,0,0.7);
+            padding: 3px 10px;
+            border-radius: 10px;
+        }
+
+        /* === 按钮 === */
+        .btn-newgame {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 300;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+        .btn-newgame:hover { transform: scale(1.08); }
+
+        .btn-sound {
+            position: fixed;
+            top: 15px;
+            left: 155px;
+            z-index: 300;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.5);
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn-sound:hover { transform: scale(1.05); }
+
+        /* === 弹窗 === */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .overlay.show { display: flex; }
+
+        .modal-box {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            padding: 40px 60px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 2em;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 80px rgba(255,215,0,0.5);
+        }
+        .modal-box button {
+            margin-top: 20px;
+            padding: 12px 40px;
+            font-size: 0.45em;
+            background: #ffd700;
+            color: #333;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .modal-box button:hover { transform: scale(1.1); }
+
+        /* 颜色选择 */
+        .color-picker-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 501;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .color-picker-overlay.show { display: flex; }
+        .color-picker-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+        }
+        .color-picker-box h3 { margin-bottom: 25px; color: #333; font-size: 1.5em; }
+        .color-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .color-option {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 5px solid transparent;
+            transition: all 0.2s;
+        }
+        .color-option:hover { transform: scale(1.15); border-color: #333; }
+        .color-option.c-red { background: #ff1744; }
+        .color-option.c-blue { background: #2979ff; }
+        .color-option.c-green { background: #00c853; }
+        .color-option.c-yellow { background: #ffd600; }
+
+        /* 消息提示 - 移到左上角（新游戏按钮下方） */
+        .toast {
+            position: fixed;
+            top: 65px;
+            left: 15px;
+            transform: none;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px 30px;
+            border-radius: 20px;
+            z-index: 400;
+            font-weight: bold;
+            font-size: 1em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+        }
+        .toast.visible { opacity: 1; }
+
+        /* 罚牌警告 */
+        .penalty-warn {
+            position: fixed;
+            top: 55px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,0,0,0.9);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 20px;
+            z-index: 400;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .penalty-warn.visible { opacity: 1; animation: blink 1s ease-in-out infinite; }
+        @keyframes blink {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* 日志 */
+        .log-panel {
+            position: fixed;
+            bottom: 15px;
+            right: 15px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            z-index: 300;
+            font-size: 0.8em;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .log-panel .log-line {
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+    </style>
+</head>
+<body>
+
+<button class="btn-newgame" onclick="newGame()">🔄 新游戏</button>
+<button class="btn-sound" id="btnSound" onclick="toggleSound()">🔊 音效</button>
+
+<div class="penalty-warn" id="penaltyWarn">⚠️ 叠加罚牌: <span id="penaltyNum">0</span> 张</div>
+<div class="toast" id="toast"></div>
+
+<div class="game-table">
+    <!-- 上方AI二号 -->
+    <div class="player-area" id="area-north">
+        <div class="player-name">🤖 AI二号</div>
+        <div class="card-count">剩余: <span id="cnt-north">7</span> 张</div>
+        <div class="card-minis" id="minis-north"></div>
+    </div>
+
+    <!-- 右侧AI三号 -->
+    <div class="player-area" id="area-east">
+        <div class="player-name">🤖 AI三号</div>
+        <div class="card-count">剩余: <span id="cnt-east">7</span> 张</div>
+        <div class="card-minis" id="minis-east"></div>
+    </div>
+
+    <!-- 左侧AI一号 -->
+    <div class="player-area" id="area-west">
+        <div class="player-name">🤖 AI一号</div>
+        <div class="card-count">剩余: <span id="cnt-west">7</span> 张</div>
+        <div class="card-minis" id="minis-west"></div>
+    </div>
+
+    <!-- 下方玩家 -->
+    <div class="player-area" id="area-south">
+        <div class="player-name">🎮 玩家（你）</div>
+        <div id="player-hand"></div>
+    </div>
+
+    <!-- 中央区域 -->
+    <div class="game-center">
+        <div class="center-section">
+            <div class="center-label">🂠 抽牌堆</div>
+            <div class="deck-img-wrap" onclick="drawCard()">
+                <img src="Cards/QQ图片20140507014655.jpg" alt="抽牌堆">
+            </div>
+            <div style="color: rgba(255,255,255,0.9); margin-top: 6px; font-size: 0.85em; font-weight: bold;">
+                剩余: <span id="deckCount">108</span>
+            </div>
+        </div>
+        <div class="center-section">
+            <div class="center-label">🎴 弃牌堆</div>
+            <div class="topcard-wrap">
+                <img src="" alt="顶牌" id="topCardImg">
+            </div>
+            <div class="color-info">
+                颜色: <span class="color-dot" id="colorDot"></span>
+                <span id="colorName">红色</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 方向指示器 -->
+<div class="dir-box">
+    <svg viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+        <polygon points="50,15 65,50 50,42 35,50" fill="white" id="dirArrow"/>
+        <text x="50" y="70" text-anchor="middle" fill="white" font-size="9" font-weight="bold">UNO</text>
+    </svg>
+</div>
+<div class="dir-label" id="dirLabel">顺时针 ▶</div>
+
+<!-- 游戏结束弹窗 -->
+<div class="overlay" id="winOverlay">
+    <div class="modal-box">
+        <div id="winMsg"></div>
+        <button onclick="newGame()">🎮 开始新游戏</button>
+    </div>
+</div>
+
+<!-- 颜色选择弹窗 -->
+<div class="color-picker-overlay" id="colorPickerOverlay">
+    <div class="color-picker-box">
+        <h3>🎨 选择颜色</h3>
+        <div class="color-options">
+            <div class="color-option c-red" onclick="pickColor('red')" title="红色"></div>
+            <div class="color-option c-blue" onclick="pickColor('blue')" title="蓝色"></div>
+            <div class="color-option c-green" onclick="pickColor('green')" title="绿色"></div>
+            <div class="color-option c-yellow" onclick="pickColor('yellow')" title="黄色"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 日志 -->
+<div class="log-panel" id="logPanel"></div>
+
+<script>
+// ==================== 音效 ====================
+let soundOn = true;
+let audioCtx = null;
+
+function initAudio() {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e) { soundOn = false; }
+}
+
+function playSound(type) {
+    if (!soundOn || !audioCtx) return;
+    try {
+        const t = audioCtx.currentTime;
+        const mk = (f, d, w, v, o) => {
+            const osc = audioCtx.createOscillator();
+            const gn = audioCtx.createGain();
+            osc.connect(gn); gn.connect(audioCtx.destination);
+            osc.frequency.value = f; osc.type = w;
+            gn.gain.setValueAtTime(v, t + (o||0));
+            gn.gain.exponentialRampToValueAtTime(0.001, t + (o||0) + d);
+            osc.start(t + (o||0)); osc.stop(t + (o||0) + d);
+        };
+        switch(type) {
+            case 'draw': mk(300, 0.1, 'sine', 0.3); break;
+            case 'play': mk(520, 0.14, 'sine', 0.4); break;
+            case 'skip': mk(210, 0.25, 'square', 0.3); break;
+            case 'reverse': mk(420, 0.1, 'sine', 0.3, 0); mk(640, 0.1, 'sine', 0.3, 0.1); break;
+            case 'penalty': mk(260, 0.17, 'sawtooth', 0.25, 0); mk(310, 0.17, 'sawtooth', 0.25, 0.12); mk(360, 0.17, 'sawtooth', 0.25, 0.24); break;
+            case 'win': mk(523, 0.3, 'sine', 0.35, 0); mk(659, 0.3, 'sine', 0.35, 0.2); mk(784, 0.3, 'sine', 0.35, 0.4); mk(1047, 0.35, 'sine', 0.35, 0.6); break;
+            case 'click': mk(620, 0.08, 'sine', 0.2); break;
+            case 'error': mk(160, 0.18, 'sawtooth', 0.3); break;
+        }
+    } catch(e) {}
+}
+
+function toggleSound() {
+    soundOn = !soundOn;
+    document.getElementById('btnSound').textContent = soundOn ? '🔊 音效' : '🔇 静音';
+    if (soundOn) playSound('click');
+}
+
+// ==================== 卡牌图片映射 ====================
+// 经过逐张核对所有实际图片内容后的正确映射
+const IMG = {
+    // 卡牌背面：UNO标志
+    back: 'Cards/QQ图片20140507014655.jpg',
+
+    // 万能+4（带+4标志）
+    wild4: 'Cards/QQ图片20140507014646.jpg',
+
+    // 万能（彩色椭圆标志）
+    wild: 'Cards/QQ图片20140507014703.jpg',
+
+    // 红色 (Red) - 015004-015529
+    red_skip: 'Cards/QQ图片20140507015004.jpg',
+    red_d2:   'Cards/QQ图片20140507015009.jpg',
+    red_rev:  'Cards/QQ图片20140507015016.jpg',
+    red_0:    'Cards/QQ图片20140507015422.jpg',
+    red_1:    'Cards/QQ图片20140507015453.jpg',
+    red_2:    'Cards/QQ图片20140507015457.jpg',
+    red_3:    'Cards/QQ图片20140507015501.jpg',
+    red_4:    'Cards/QQ图片20140507015503.jpg',
+    red_5:    'Cards/QQ图片20140507015504.jpg',
+    red_6:    'Cards/QQ图片20140507015521.jpg',
+    red_7:    'Cards/QQ图片20140507015523.jpg',
+    red_8:    'Cards/QQ图片20140507015526.jpg',
+    red_9:    'Cards/QQ图片20140507015529.jpg',
+
+    // 绿色 (Green) - 数字在015736-015752, 功能牌在015629,015632,015633
+    green_skip: 'Cards/QQ图片20140507015629.jpg',
+    green_d2:   'Cards/QQ图片20140507015632.jpg',
+    green_rev:  'Cards/QQ图片20140507015633.jpg',
+    green_0:    'Cards/QQ图片20140507015736.jpg',
+    green_1:    'Cards/QQ图片20140507015739.jpg',
+    green_2:    'Cards/QQ图片20140507015741.jpg',
+    green_3:    'Cards/QQ图片20140507015742.jpg',
+    green_4:    'Cards/QQ图片20140507015744.jpg',
+    green_5:    'Cards/QQ图片20140507015746.jpg',
+    green_6:    'Cards/QQ图片20140507015748.jpg',
+    green_7:    'Cards/QQ图片20140507015749.jpg',
+    green_8:    'Cards/QQ图片20140507015751.jpg',
+    green_9:    'Cards/QQ图片20140507015752.jpg',
+
+    // 黄色 (Yellow) - 015936-020104 (含015940的0)
+    yellow_skip: 'Cards/QQ图片20140507015936.jpg',
+    yellow_d2:   'Cards/QQ图片20140507015938.jpg',
+    yellow_rev:  'Cards/QQ图片20140507015939.jpg',
+    yellow_0:    'Cards/QQ图片20140507015940.jpg',
+    yellow_1:    'Cards/QQ图片20140507015942.jpg',
+    yellow_2:    'Cards/QQ图片20140507015943.jpg',
+    yellow_3:    'Cards/QQ图片20140507015945.jpg',
+    yellow_4:    'Cards/QQ图片20140507015946.jpg',
+    yellow_5:    'Cards/QQ图片20140507015948.jpg',
+    yellow_6:    'Cards/QQ图片20140507015949.jpg',
+    yellow_7:    'Cards/QQ图片20140507015951.jpg',
+    yellow_8:    'Cards/QQ图片20140507015952.jpg',
+    yellow_9:    'Cards/QQ图片20140507015956.jpg',
+
+    // 蓝色 (Blue) - 020058-020114
+    blue_skip: 'Cards/QQ图片20140507020058.jpg',
+    blue_d2:   'Cards/QQ图片20140507020059.jpg',
+    blue_rev:  'Cards/QQ图片20140507020101.jpg',
+    blue_0:    'Cards/QQ图片20140507020103.jpg',
+    blue_1:    'Cards/QQ图片20140507020104.jpg',
+    blue_2:    'Cards/QQ图片20140507020105.jpg',
+    blue_3:    'Cards/QQ图片20140507020107.jpg',
+    blue_4:    'Cards/QQ图片20140507020108.jpg',
+    blue_5:    'Cards/QQ图片20140507020109.jpg',
+    blue_6:    'Cards/QQ图片20140507020110.jpg',
+    blue_7:    'Cards/QQ图片20140507020112.jpg',
+    blue_8:    'Cards/QQ图片20140507020113.jpg',
+    blue_9:    'Cards/QQ图片20140507020114.jpg',
+};
+
+function getCardImg(card) {
+    let key;
+    if (card.typ === 'wild') key = 'wild';
+    else if (card.typ === 'w4') key = 'wild4';
+    else if (card.typ === 'skip') key = card.col + '_skip';
+    else if (card.typ === 'd2') key = card.col + '_d2';
+    else if (card.typ === 'rev') key = card.col + '_rev';
+    else key = card.col + '_' + card.num;
+    return IMG[key] || IMG['red_0'];
+}
+
+// ==================== 游戏核心 ====================
+const COLORS = ['red','yellow','green','blue'];
+const COLOR_NAMES = {red:'红色',yellow:'黄色',green:'绿色',blue:'蓝色'};
+const COLOR_HEX = {red:'#ff1744',yellow:'#ffd600',green:'#00c853',blue:'#2979ff'};
+
+class Card {
+    constructor(col, typ, num = -1) {
+        this.col = col;
+        this.typ = typ; // num, skip, rev, d2, wild, w4
+        this.num = num;
+    }
+
+    canPlay(topCard, curColor, stackVal) {
+        // 有罚牌叠加时
+        if (stackVal > 0) {
+            if (stackVal >= 4) return this.typ === 'w4';
+            return this.typ === 'd2' || this.typ === 'w4';
+        }
+        // 万能牌
+        if (this.typ === 'wild' || this.typ === 'w4') return true;
+        // 同颜色
+        if (this.col === curColor) return true;
+        // 同类型功能牌
+        if (this.typ === topCard.typ && this.typ !== 'num') return true;
+        // 同数字
+        if (this.typ === 'num' && topCard.typ === 'num' && this.num === topCard.num) return true;
+        return false;
+    }
+
+    toString() {
+        const syms = {num: this.num, skip: '⊘', rev: '⇄', d2: '+2', wild: 'W', w4: '+4'};
+        const s = syms[this.typ];
+        if (this.typ === 'wild' || this.typ === 'w4') return '万能' + s;
+        return COLOR_NAMES[this.col] + s;
+    }
+}
+
+class Player {
+    constructor(name, isHuman = false) {
+        this.name = name;
+        this.hand = [];
+        this.isHuman = isHuman;
+    }
+    draw(card) { this.hand.push(card); }
+    play(idx) { return this.hand.splice(idx, 1)[0]; }
+    count() { return this.hand.length; }
+}
+
+let hasDrawnThisTurn = false;
+
+let game = {
+    players: [],
+    turn: 0,
+    direction: 1, // 1=顺时针, -1=逆时针
+    stack: 0,      // 罚牌累积
+    currentColor: 'red',
+    topCard: null,
+    deck: [],
+    pile: [],
+    isOver: false,
+    isPicking: false,
+};
+
+function buildDeck() {
+    const deck = [];
+    for (const col of COLORS) {
+        deck.push(new Card(col, 'num', 0));
+        for (let n = 1; n <= 9; n++) {
+            deck.push(new Card(col, 'num', n));
+            deck.push(new Card(col, 'num', n));
+        }
+        deck.push(new Card(col, 'skip'), new Card(col, 'skip'));
+        deck.push(new Card(col, 'rev'), new Card(col, 'rev'));
+        deck.push(new Card(col, 'd2'), new Card(col, 'd2'));
+    }
+    for (let i = 0; i < 4; i++) {
+        deck.push(new Card('red', 'wild'));
+        deck.push(new Card('red', 'w4'));
+    }
+    return deck;
+}
+
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+}
+
+function initGame() {
+    initAudio();
+
+    game.deck = buildDeck();
+    shuffle(game.deck);
+
+    game.players = [
+        new Player('玩家（你）', true),
+        new Player('AI一号'),
+        new Player('AI二号'),
+        new Player('AI三号'),
+    ];
+    // 玩家方位布局：south=玩家, west=AI一号, north=AI二号, east=AI三号
+    // 玩家0在south, AI 1=west, AI 2=north, AI 3=east
+
+    // 每人发7张
+    for (let r = 0; r < 7; r++) {
+        for (const p of game.players) {
+            p.draw(game.deck.pop());
+        }
+    }
+
+    // 找到第一张数字牌作为起始牌
+    do {
+        game.topCard = game.deck.pop();
+    } while (game.topCard.typ !== 'num' && game.deck.length > 0);
+
+    game.currentColor = game.topCard.col;
+    game.pile.push(game.topCard);
+    game.turn = Math.floor(Math.random() * 4);
+    game.direction = 1;
+    game.stack = 0;
+    game.isOver = false;
+    game.isPicking = false;
+    hasDrawnThisTurn = false;
+
+    console.log('=== 游戏初始化完成 ===');
+    console.log('玩家手牌数量:', game.players[0].count());
+    console.log('玩家手牌:', game.players[0].hand.map(c => c.toString()).join(', '));
+    console.log('顶牌:', game.topCard.toString());
+    console.log('当前回合:', game.turn, game.players[game.turn].name);
+
+    refreshUI();
+    showToast('🎮 游戏开始！');
+    playSound('play');
+
+    if (!game.players[game.turn].isHuman) {
+        setTimeout(aiTurn, 1200);
+    }
+}
+
+// ==================== UI渲染 ====================
+function refreshUI() {
+    updateTopCard();
+    updateColor();
+    updateAllPlayers();
+    updateDirection();
+    updatePenalty();
+    document.getElementById('deckCount').textContent = game.deck.length;
+}
+
+function updateTopCard() {
+    document.getElementById('topCardImg').src = getCardImg(game.topCard);
+}
+
+function updateColor() {
+    document.getElementById('colorName').textContent = COLOR_NAMES[game.currentColor];
+    document.getElementById('colorDot').style.background = COLOR_HEX[game.currentColor];
+}
+
+function updateAllPlayers() {
+    // 玩家0=south(玩家), AI1=west(左), AI2=north(上), AI3=east(右)
+    const positions = ['south','west','north','east'];
+
+    game.players.forEach((p, i) => {
+        const pos = positions[i];
+
+        // 更新手牌数量
+        const cntEl = document.getElementById('cnt-' + pos);
+        if (cntEl) cntEl.textContent = p.count();
+
+        // 更新迷你卡牌背面
+        const minisEl = document.getElementById('minis-' + pos);
+        if (minisEl) {
+            minisEl.innerHTML = '';
+            const maxShow = pos === 'north' ? 18 : 7;
+            for (let j = 0; j < Math.min(p.count(), maxShow); j++) {
+                const img = document.createElement('img');
+                img.src = IMG.back;
+                img.className = 'mini-back';
+                img.alt = '卡牌';
+                minisEl.appendChild(img);
+            }
+        }
+
+        // 高亮当前玩家
+        const areaEl = document.getElementById('area-' + pos);
+        if (areaEl) {
+            areaEl.classList.toggle('active', i === game.turn);
+        }
+    });
+
+    // 渲染玩家手牌 - 这是关键！
+    updateHand();
+}
+
+function updateHand() {
+    const handEl = document.getElementById('player-hand');
+    if (!handEl) {
+        console.error('找不到 player-hand 元素！');
+        return;
+    }
+
+    handEl.innerHTML = '';
+
+    if (game.isOver) return;
+
+    const player = game.players[0];
+    const cards = player.hand;
+
+    console.log('渲染手牌, 数量:', cards.length, '回合:', game.turn);
+
+    cards.forEach((card, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'hand-card-wrap';
+        if (card.col === 'yellow') wrap.classList.add('card-yellow');
+
+        const inner = document.createElement('div');
+        inner.className = 'hand-card-inner';
+
+        const img = document.createElement('img');
+        img.src = getCardImg(card);
+        img.alt = card.toString();
+        img.style.display = 'block';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+
+        inner.appendChild(img);
+        wrap.appendChild(inner);
+
+        // 能否打出
+        const canPlay = card.canPlay(game.topCard, game.currentColor, game.stack);
+        const isMyTurn = game.turn === 0 && !game.isPicking;
+
+        if (!isMyTurn || !canPlay) {
+            wrap.classList.add('disabled');
+        } else if (canPlay) {
+            wrap.onclick = () => playCard(idx);
+        }
+
+        handEl.appendChild(wrap);
+    });
+
+    console.log('手牌已渲染到DOM, 子元素数量:', handEl.children.length);
+}
+
+function updateDirection() {
+    const arrow = document.getElementById('dirArrow');
+    const label = document.getElementById('dirLabel');
+    if (game.direction === 1) {
+        arrow.setAttribute('points', '50,15 65,50 50,42 35,50');
+        label.textContent = '顺时针 ▶';
+    } else {
+        arrow.setAttribute('points', '50,85 35,50 50,58 65,50');
+        label.textContent = '◀ 逆时针';
+    }
+}
+
+function updatePenalty() {
+    const el = document.getElementById('penaltyWarn');
+    if (game.stack > 0) {
+        el.classList.add('visible');
+        document.getElementById('penaltyNum').textContent = game.stack;
+    } else {
+        el.classList.remove('visible');
+    }
+}
+
+// ==================== 操作 ====================
+function playCard(idx) {
+    if (game.isOver || game.isPicking || game.turn !== 0) return;
+
+    const card = game.players[0].hand[idx];
+    if (!card.canPlay(game.topCard, game.currentColor, game.stack)) {
+        showToast('⚠️ 不能出这张牌！');
+        playSound('error');
+        return;
+    }
+
+    const played = game.players[0].play(idx);
+    game.pile.push(played);
+    game.topCard = played;
+
+    showToast('🎴 你打出: ' + played.toString());
+    playSound('play');
+
+    if (played.typ === 'wild' || played.typ === 'w4') {
+        game.isPicking = true;
+        document.getElementById('colorPickerOverlay').classList.add('show');
+        refreshUI();
+        return;
+    }
+
+    game.currentColor = played.col;
+    applyEffect(played);
+    if (!checkWin()) nextTurn();
+}
+
+function pickColor(col) {
+    game.currentColor = col;
+    game.isPicking = false;
+    document.getElementById('colorPickerOverlay').classList.remove('show');
+    showToast('🎨 你选择了' + COLOR_NAMES[col] + '色');
+    playSound('click');
+
+    const played = game.pile[game.pile.length - 1];
+    applyEffect(played);
+    if (!checkWin()) nextTurn();
+}
+
+function drawCard() {
+    if (game.isOver || game.isPicking || game.turn !== 0) return;
+
+    // 无罚牌时，一回合只能抽一次
+    if (game.stack === 0) {
+        if (hasDrawnThisTurn) {
+            showToast('⚠️ 一回合只能抽一次牌！');
+            return;
+        }
+        hasDrawnThisTurn = true;
+    }
+
+    // 有罚牌
+    if (game.stack > 0) {
+        showToast('🎴 你抽了 ' + game.stack + ' 张罚牌');
+        playSound('penalty');
+        for (let i = 0; i < game.stack; i++) {
+            if (game.deck.length === 0) reshuffle();
+            game.players[0].draw(game.deck.pop());
+        }
+        game.stack = 0;
+        nextTurn();
+        return;
+    }
+
+    if (game.deck.length === 0) reshuffle();
+    const newCard = game.deck.pop();
+    game.players[0].draw(newCard);
+    showToast('🎴 抽到: ' + newCard.toString());
+    playSound('draw');
+
+    refreshUI();
+
+    if (!newCard.canPlay(game.topCard, game.currentColor, game.stack)) {
+        setTimeout(nextTurn, 1100);
+    } else {
+        showToast('💡 可以出刚抽的牌！');
+    }
+}
+
+function applyEffect(card) {
+    switch (card.typ) {
+        case 'skip':
+            showToast('⚡ 跳过下家！');
+            playSound('skip');
+            advanceTurn();
+            break;
+        case 'rev':
+            game.direction *= -1;
+            showToast('🔄 出牌顺序反转！');
+            playSound('reverse');
+            updateDirection();
+            break;
+        case 'd2':
+            game.stack += 2;
+            showToast('+2 叠加 → 共' + game.stack + '张');
+            playSound('penalty');
+            break;
+        case 'w4':
+            game.stack += 4;
+            showToast('+4 叠加 → 共' + game.stack + '张');
+            playSound('penalty');
+            break;
+    }
+}
+
+function advanceTurn() {
+    game.turn += game.direction;
+    if (game.turn >= game.players.length) game.turn = 0;
+    if (game.turn < 0) game.turn = game.players.length - 1;
+}
+
+function checkWin() {
+    for (const p of game.players) {
+        if (p.count() === 0) {
+            game.isOver = true;
+            const msg = p.isHuman ? '🎉 你赢了！' : '🎉 ' + p.name + ' 赢了！';
+            document.getElementById('winMsg').innerHTML = '🏆<br>' + msg;
+            document.getElementById('winOverlay').classList.add('show');
+            showToast('🏆 ' + p.name + ' 获胜！');
+            playSound('win');
+            refreshUI();
+            return true;
+        }
+    }
+    return false;
+}
+
+function nextTurn() {
+    if (game.isOver) return;
+    hasDrawnThisTurn = false;
+    advanceTurn();
+    refreshUI();
+    if (!game.players[game.turn].isHuman) {
+        setTimeout(aiTurn, 1350);
+    }
+}
+
+// ==================== AI ====================
+function aiChooseBest(ai) {
+    let bestIdx = -1;
+    let bestScore = -Infinity;
+
+    for (let i = 0; i < ai.hand.length; i++) {
+        const card = ai.hand[i];
+        if (!card.canPlay(game.topCard, game.currentColor, game.stack)) continue;
+
+        let score = 0;
+        if (card.typ === 'num') score += card.num + (card.col === game.currentColor ? 6 : 0);
+        if (card.typ === 'skip') score += 16;
+        if (card.typ === 'rev') score += 12;
+        if (card.typ === 'd2') { score += 22; if (game.stack > 0) score += 32; }
+        if (card.typ === 'w4') { if (game.stack >= 4) score += 55; else score += 6; }
+        if (card.typ === 'wild') score += 4;
+        if (ai.count() <= 2) score += 42;
+        score += Math.random() * 12;
+
+        if (score > bestScore) {
+            bestScore = score;
+            bestIdx = i;
+        }
+    }
+    return bestIdx;
+}
+
+function aiSmartColor(hand) {
+    const counts = {red:0, yellow:0, green:0, blue:0};
+    for (const c of hand) {
+        if (counts[c.col] !== undefined) counts[c.col]++;
+    }
+    let best = 'red', max = 0;
+    for (const col of COLORS) {
+        if (counts[col] > max) { max = counts[col]; best = col; }
+    }
+    return best;
+}
+
+function aiTurn() {
+    if (game.isOver) return;
+
+    const ai = game.players[game.turn];
+    showToast('🤖 ' + ai.name + '的回合');
+    playSound('play');
+
+    // 处理罚牌
+    if (game.stack > 0) {
+        let canStack = false;
+        if (game.stack < 4) canStack = ai.hand.some(c => c.typ === 'd2');
+        if (game.stack >= 4) canStack = ai.hand.some(c => c.typ === 'w4');
+
+        if (!canStack) {
+            showToast('🎴 ' + ai.name + '无法叠加，抽' + game.stack + '张牌');
+            playSound('draw');
+            for (let i = 0; i < game.stack; i++) {
+                if (game.deck.length === 0) reshuffle();
+                ai.draw(game.deck.pop());
+            }
+            game.stack = 0;
+            setTimeout(nextTurn, 1150);
+            return;
+        }
+    }
+
+    const idx = aiChooseBest(ai);
+
+    if (idx === -1) {
+        // 抽牌
+        if (game.deck.length === 0) reshuffle();
+        ai.draw(game.deck.pop());
+        showToast('🎴 ' + ai.name + '抽了一张牌');
+        playSound('draw');
+        setTimeout(nextTurn, 1150);
+    } else {
+        const played = ai.play(idx);
+        game.pile.push(played);
+        game.topCard = played;
+        showToast('🎴 ' + ai.name + ': ' + played.toString());
+        playSound('play');
+
+        if (played.typ === 'wild' || played.typ === 'w4') {
+            game.currentColor = aiSmartColor(ai.hand);
+            showToast('🎨 ' + ai.name + '选择了' + COLOR_NAMES[game.currentColor] + '色');
+        } else {
+            game.currentColor = played.col;
+        }
+
+        applyEffect(played);
+        if (ai.count() === 1) showToast('📢 ' + ai.name + ': UNO！');
+
+        if (!checkWin()) setTimeout(nextTurn, 1350);
+    }
+}
+
+function reshuffle() {
+    if (game.pile.length <= 1) return;
+    const top = game.pile.pop();
+    game.deck = game.pile.splice(0);
+    game.pile = [top];
+    shuffle(game.deck);
+    showToast('🔄 重新洗牌');
+}
+
+// ==================== UI辅助 ====================
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('visible');
+    clearTimeout(el._timeout);
+    el._timeout = setTimeout(() => el.classList.remove('visible'), 2400);
+    addLog(msg);
+}
+
+function addLog(msg) {
+    const panel = document.getElementById('logPanel');
+    const div = document.createElement('div');
+    div.className = 'log-line';
+    div.textContent = msg;
+    panel.appendChild(div);
+    while (panel.children.length > 8) panel.removeChild(panel.firstChild);
+    panel.scrollTop = panel.scrollHeight;
+}
+
+function newGame() {
+    document.getElementById('winOverlay').classList.remove('show');
+    document.getElementById('colorPickerOverlay').classList.remove('show');
+    document.getElementById('logPanel').innerHTML = '';
+    initGame();
+}
+
+// 启动
+window.addEventListener('DOMContentLoaded', () => {
+    console.log('页面加载完成，开始初始化游戏...');
+    initGame();
+});
+</script>
+
+</body>
+</html>

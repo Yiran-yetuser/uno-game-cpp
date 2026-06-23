@@ -1,24 +1,24 @@
-cmake_minimum_required(VERSION 3.16)
-project(uno-game-cpp VERSION 1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.10.0)
+project(uno-game-cpp VERSION 0.1.0 LANGUAGES C CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17) # C++17版本
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(Qt6_DIR "/opt/homebrew/lib/cmake/Qt6" CACHE PATH "Qt6 cmake directory")
+# 新增两行：指定输入源码UTF8、程序输出字符串UTF8
+add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
 
-add_subdirectory(src/core)
-
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-set(CMAKE_AUTOMOC ON)
-
-add_executable(uno_game
+add_executable(uno-game-cpp 
     src/main.cpp
-    src/ui/main_window.cpp
-    src/ui/game_scene.cpp
-    src/ui/card_widget.cpp
-    src/ui/hand_widget.cpp
-    src/ui/player_info_widget.cpp
+    src/card.cpp
+    src/player.cpp
+    src/ai_player.cpp
+    src/deck.cpp
+    src/game.cpp
 )
 
-target_link_libraries(uno_game PRIVATE uno_core Qt6::Widgets)
-target_include_directories(uno_game PRIVATE src)
+# 包含头文件目录
+include_directories(${PROJECT_SOURCE_DIR}/include)
+
+include(CTest)
+enable_testing()
+
