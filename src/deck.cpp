@@ -14,21 +14,21 @@ void Deck::buildFullDeck()
 {
     drawPile.clear();
     std::vector<Color> colors = {Color::Red, Color::Yellow, Color::Green, Color::Blue};
-    // æ•°å­—ç‰Œ 0å„1å¼ ï¼Œ1-9å„2å¼ 
+    // Êı×ÖÅÆ 0¸÷1ÕÅ£¬1-9¸÷2ÕÅ
     for (Color c : colors) {
         drawPile.emplace_back(c, CardType::Number, 0);
         for (int num = 1; num <= 9; ++num) {
             drawPile.emplace_back(c, CardType::Number, num);
             drawPile.emplace_back(c, CardType::Number, num);
         }
-        // åŠŸèƒ½ç‰Œå„2å¼ 
+        // ¹¦ÄÜÅÆ¸÷2ÕÅ
         for (int i = 0; i < 2; ++i) {
             drawPile.emplace_back(c, CardType::Skip);
             drawPile.emplace_back(c, CardType::Reverse);
             drawPile.emplace_back(c, CardType::DrawTwo);
         }
     }
-    // ä¸‡èƒ½ç‰Œ4å¼ ï¼Œä¸‡èƒ½+4å››å¼ 
+    // ÍòÄÜÅÆ4ÕÅ£¬ÍòÄÜ+4ËÄÕÅ
     for (int i = 0; i < 4; ++i) {
         drawPile.emplace_back(Color::Wild, CardType::Wild);
         drawPile.emplace_back(Color::Wild, CardType::WildDrawFour);
@@ -38,7 +38,7 @@ void Deck::buildFullDeck()
 void Deck::shuffle(std::vector<Card> &pile)
 {
     std::mt19937 rng(static_cast<unsigned>(time(nullptr)));
-    std::shuffle(pile.begin(), pile.end(), rng); // C++æ ‡å‡†åº“å®ç°Fisher-Yatesæ´—ç‰Œç®—æ³•
+    std::shuffle(pile.begin(), pile.end(), rng); // C++±ê×¼¿âÊµÏÖFisher-YatesÏ´ÅÆËã·¨
 }
 
 Card Deck::draw()
@@ -58,10 +58,10 @@ void Deck::reshuffleDiscard()
     if (discardPile.size() <= 1)
         return;
 
-    Card top = discardPile.back(); // ä¿ç•™é¡¶ç‰Œ
+    Card top = discardPile.back(); // ±£Áô¶¥ÅÆ
     drawPile.insert(drawPile.end(), discardPile.begin(), discardPile.end() - 1);
     discardPile.clear();
-    discardPile.push_back(top); // æŠŠé¡¶ç‰Œæ”¾å›å»
+    discardPile.push_back(top); // °Ñ¶¥ÅÆ·Å»ØÈ¥
     shuffle(drawPile);
 }
 void Deck::addDiscard(const Card &card)

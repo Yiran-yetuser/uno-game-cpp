@@ -135,38 +135,19 @@ void drawMiniBack(int x, int y) {
     resetC();
 }
 
-// 把中文 toString() 输出转成控制台安全的短标签
-// 原: "红5" / "蓝跳过" / "黄反转" / "绿+2" / "万能牌" / "万能+4"
-static string shortLabel(const Card &c) {
-    string col = "?";
-    switch (c.color) {
-    case Color::Red:    col = "R"; break;
-    case Color::Yellow: col = "Y"; break;
-    case Color::Green:  col = "G"; break;
-    case Color::Blue:   col = "B"; break;
-    case Color::Wild:   col = "W"; break;
-    }
-    switch (c.type) {
-    case CardType::Number:      return col + to_string(c.number); // R5, B7
-    case CardType::Skip:        return col + "S";                  // RS Skip
-    case CardType::Reverse:     return col + "Rv";                 // RRv
-    case CardType::DrawTwo:     return col + "+2";
-    case CardType::Wild:        return "Wld";
-    case CardType::WildDrawFour: return "W+4";
-    }
-    return "?";
-}
-
+// 直接用 Card::toString() 返回的中文
+// src/ 已改为 GBK 编码，MSVC/MinGW 用 GBK 编译
 void drawPlayerCard(int x, int y, const Card &c, int idx, bool canPlay) {
     int cc = canPlay ? colorCode(c.color) : C_GRAY;
-    string txt = shortLabel(c);
-    if ((int)txt.size() > 8) txt = txt.substr(0, 8);
+    string txt = c.toString();
+    // GBK 中文字符占 2 字节（控制台列宽 1），所以按字符数截断
+    if (txt.length() > 6) txt = txt.substr(0, 6);
 
     setC(cc);
     gotoxy(x, y);     cout << "+" << repeatStr("-", 8) << "+";
 
     gotoxy(x, y + 1);
-    int pad = 10 - (int)txt.size();
+    int pad = 8 - (int)txt.size();
     int leftPad = pad / 2;
     cout << "| " << repeatStr(" ", leftPad);
     setC(canPlay ? colorCode(c.color) : C_GRAY);
@@ -199,15 +180,15 @@ void drawFullScreen(
     // ===== 标题栏 =====
     setC(C_YELLOW);
     gotoxy(0, 0); cout << repeatStr(H_H, CON_W / 2);
-    gotoxy(midX - 10, 0); cout << " * UNO Console * ";
+    gotoxy(midX - 8, 0); cout << " * UNO 控制台 * ";
     resetC();
 
-    string dirStr = (direction == 1) ? "> CW" : "< CCW";
-    printAt(CON_W - 16, 0, "Dir: " + dirStr, C_CYAN);
+    string dirStr = (direction == 1) ? "顺时针 ?" : "逆时针 ?";
+    printAt(CON_W - 18, 0, "方向: " + dirStr, C_CYAN);
 
     // ===== 上方: AI二号 =====
-    printAt(midX - 7, 2, "[ AI-2 ]", C_PINK);
-    printAt(midX - 8, 3, "Cards: " + to_string(players[2]->getHandCount()), C_GRAY);
+    printAt(midX - 6, 2, "【AI二号】", C_PINK);
+    printAt(midX - 7, 3, "剩余: " + to_string(players[2]->getHandCount()) + " 张", C_GRAY);
     int ai2Cnt = min(players[2]->getHandCount(), 14);
     int ai2X = midX - (ai2Cnt * 4) / 2;
     for (int i = 0; i < ai2Cnt; i++) {
@@ -215,16 +196,16 @@ void drawFullScreen(
     }
 
     // ===== 左方: AI一号 =====
-    printAt(1, 6, "[ AI-1 ]", C_PINK);
-    printAt(1, 7, "Cards: " + to_string(players[1]->getHandCount()), C_GRAY);
+    printAt(1, 6, "【AI一号】", C_PINK);
+    printAt(1, 7, "剩余: " + to_string(players[1]->getHandCount()) + " 张", C_GRAY);
     int ai1Cnt = min(players[1]->getHandCount(), 10);
     for (int i = 0; i < ai1Cnt; i++) {
         drawMiniBack(1, 9 + i * 3);
     }
 
     // ===== 右方: AI三号 =====
-    printAt(CON_W - 11, 6, "[ AI-3 ]", C_PINK);
-    printAt(CON_W - 11, 7, "Cards: " + to_string(players[3]->getHandCount()), C_GRAY);
+    printAt(CON_W - 12, 6, "【AI三号】", C_PINK);
+    printAt(CON_W - 12, 7, "剩余: " + to_string(players[3]->getHandCount()) + " 张", C_GRAY);
     int ai3Cnt = min(players[3]->getHandCount(), 10);
     for (int i = 0; i < ai3Cnt; i++) {
         drawMiniBack(CON_W - 5, 9 + i * 3);
@@ -235,7 +216,7 @@ void drawFullScreen(
 
     setC(C_CYAN);
     gotoxy(cx, cy);     cout << "+===========+";
-    gotoxy(cx, cy + 1); cout << "|  DRAW     |";
+    gotoxy(cx, cy + 1); cout << "|  抽牌堆   |";
     gotoxy(cx, cy + 2); cout << "|  ~~~~~~   |";
     gotoxy(cx, cy + 3); cout << "|  ~~~~~~   |";
     gotoxy(cx, cy + 4); cout << "+===========+";
@@ -247,20 +228,29 @@ void drawFullScreen(
     gotoxy(dx, cy);     cout << "+===========+";
     gotoxy(dx, cy + 1); cout << "| ";
 
-    string topTxt = shortLabel(topCard);
+    string topTxt = topCard.toString();
     setC(tc); cout << topTxt; resetC();
     int fill = max(0, 9 - (int)topTxt.size());
     cout << repeatStr(" ", fill);
     setC(tc); cout << " |";
 
+    // 颜色标签：颜色全称（红/黄/绿/蓝）
+    string colorName;
+    switch (currentColor) {
+    case Color::Red:    colorName = "红色"; break;
+    case Color::Yellow: colorName = "黄色"; break;
+    case Color::Green:  colorName = "绿色"; break;
+    case Color::Blue:   colorName = "蓝色"; break;
+    default:            colorName = "无色"; break;
+    }
     gotoxy(dx, cy + 2);
-    cout << "| Color:";
+    cout << "| 颜色:";
     setC(colorCode(currentColor));
-    cout << colorNameShort(currentColor);
+    cout << colorName;
     resetC();
-    int fill2 = max(0, 2 - (int)colorNameShort(currentColor).size());
+    int fill2 = max(0, 4 - (int)colorName.size());
     setC(tc);
-    cout << repeatStr(" ", fill2 + 2) << " |";
+    cout << repeatStr(" ", fill2) << " |";
     gotoxy(dx, cy + 3);
     cout << "+===========+";
     resetC();
@@ -268,21 +258,25 @@ void drawFullScreen(
     if (drawStack > 0) {
         setC(C_RED);
         gotoxy(cx, cy + 6);
-        cout << "!! PENALTY: +" << drawStack << " cards !!";
+        cout << "!! 罚牌叠加: +" << drawStack << " 张 !!";
         resetC();
     }
 
     // ===== 当前回合提示 =====
     if (curTurn == 0) {
-        printAt(midX - 7, 18, "<< YOUR TURN >>", C_GREEN);
+        printAt(midX - 6, 18, ">> 你的回合 <<", C_GREEN);
     } else {
         string name = players[curTurn]->getName();
-        printAt(midX - 12, 18, "> " + name + "'s turn...", C_PINK);
+        if (name == "You") name = "你";
+        else if (name == "AI-1") name = "AI一号";
+        else if (name == "AI-2") name = "AI二号";
+        else if (name == "AI-3") name = "AI三号";
+        printAt(midX - 10, 18, "> " + name + " 正在出牌...", C_PINK);
     }
 
     // ===== 下方: 玩家手牌 =====
     Player *human = players[0];
-    printAt(2, 20, "Your hand (" + to_string(human->getHandCount()) + "):", C_WHITE);
+    printAt(2, 20, "你的手牌 (共 " + to_string(human->getHandCount()) + " 张):", C_WHITE);
 
     auto &hand = human->getHand();
     int cardW = 10;
@@ -320,16 +314,16 @@ void drawFullScreen(
     setC(C_CYAN);
     gotoxy(2, barY); cout << repeatStr("-", CON_W - 4); resetC();
 
-    printAt(2, barY + 1, "Commands:", C_WHITE);
-    printAt(13, barY + 1, "num=play", C_GREEN);
-    printAt(24, barY + 1, "  d=draw", C_YELLOW);
-    printAt(33, barY + 1, "  p=pass", C_CYAN);
-    printAt(42, barY + 1, "  q=quit", C_RED);
+    printAt(2, barY + 1, "操作:", C_WHITE);
+    printAt(8, barY + 1, "数字=出牌", C_GREEN);
+    printAt(18, barY + 1, "d=抽牌", C_YELLOW);
+    printAt(28, barY + 1, "p=结束", C_CYAN);
+    printAt(38, barY + 1, "q=退出", C_RED);
 
     if (drawStack == 0 && hasDrawn) {
-        printAt(2, barY + 2, "! Drew already. Play a card or press p to pass.", C_RED);
+        printAt(2, barY + 2, "本回合已抽过牌, 请出牌或按 p 结束回合", C_RED);
     } else if (drawStack > 0) {
-        printAt(2, barY + 2, "! Must draw " + to_string(drawStack) + " penalty cards! (d to draw)", C_RED);
+        printAt(2, barY + 2, "必须抽 " + to_string(drawStack) + " 张罚牌! (按 d 抽牌)", C_RED);
     }
 
     printAt(2, CON_H - 1, ">", C_YELLOW);
@@ -350,16 +344,16 @@ void toast(const string &msg, int color = C_WHITE, int wait = 800) {
 
 Color pickColor() {
     cls();
-    printAt(CON_W / 2 - 10, CON_H / 2 - 3, "Pick a color:", C_YELLOW);
-    printAt(CON_W / 2 - 10, CON_H / 2 - 1, "  1 =", C_WHITE);
-    setC(C_RED); cout << "RED"; resetC();
-    printAt(CON_W / 2 - 10, CON_H / 2,     "  2 =", C_WHITE);
-    setC(C_YELLOW); cout << "YELLOW"; resetC();
-    printAt(CON_W / 2 - 10, CON_H / 2 + 1, "  3 =", C_WHITE);
-    setC(C_GREEN);  cout << "GREEN";  resetC();
-    printAt(CON_W / 2 - 10, CON_H / 2 + 2, "  4 =", C_WHITE);
-    setC(C_BLUE);   cout << "BLUE";   resetC();
-    printAt(CON_W / 2 - 10, CON_H / 2 + 4, "Choice [1-4]: ", C_WHITE);
+    printAt(CON_W / 2 - 8, CON_H / 2 - 3, "请选择颜色:", C_YELLOW);
+    printAt(CON_W / 2 - 8, CON_H / 2 - 1, "  1 =", C_WHITE);
+    setC(C_RED); cout << "红色"; resetC();
+    printAt(CON_W / 2 - 8, CON_H / 2,     "  2 =", C_WHITE);
+    setC(C_YELLOW); cout << "黄色"; resetC();
+    printAt(CON_W / 2 - 8, CON_H / 2 + 1, "  3 =", C_WHITE);
+    setC(C_GREEN);  cout << "绿色";  resetC();
+    printAt(CON_W / 2 - 8, CON_H / 2 + 2, "  4 =", C_WHITE);
+    setC(C_BLUE);   cout << "蓝色";   resetC();
+    printAt(CON_W / 2 - 8, CON_H / 2 + 4, "请输入 [1-4]: ", C_WHITE);
 
     showCursor();
     while (true) {
@@ -407,9 +401,9 @@ int main() {
     hCon = GetStdHandle(STD_OUTPUT_HANDLE);
     HANDLE hIn  = GetStdHandle(STD_INPUT_HANDLE);
 
-    // 恢复控制台默认代码页（中文 = GBK）
-    SetConsoleOutputCP(CP_ACP);
-    SetConsoleCP(CP_ACP);
+    // src/ 已改为 GBK 编码，设置控制台代码页为 GBK
+    SetConsoleOutputCP(936);
+    SetConsoleCP(936);
 
     // 设置窗口大小
     COORD bufferSize = {(SHORT)CON_W, (SHORT)CON_H};
@@ -460,25 +454,30 @@ int main() {
     };
 
     auto executeEffect = [&](const Card &played) {
+        string pname = players[currentPlayerIdx]->getName();
+        if (pname == "You") pname = "你";
+        else if (pname == "AI-1") pname = "AI一号";
+        else if (pname == "AI-2") pname = "AI二号";
+        else if (pname == "AI-3") pname = "AI三号";
         switch (played.type) {
         case CardType::Skip:
-            toast(players[currentPlayerIdx]->getName() + " SKIPPED!", C_RED, 800); break;
+            toast(pname + " 被跳过!", C_RED, 800); break;
         case CardType::Reverse:
             direction *= -1;
-            toast("Direction REVERSED!", C_CYAN, 800); break;
+            toast("方向反转!", C_CYAN, 800); break;
         case CardType::DrawTwo:
             drawStack += 2;
-            toast("+2 STACKED!", C_RED, 800); break;
+            toast("+2 罚牌叠加!", C_RED, 800); break;
         case CardType::WildDrawFour:
             drawStack += 4;
-            toast("+4 STACKED!", C_RED, 800); break;
+            toast("+4 罚牌叠加!", C_RED, 800); break;
         default: break;
         }
     };
 
     if (currentPlayerIdx != 0) {
         drawFullScreen(players, currentPlayerIdx, hasDrawnThisTurn, direction, drawStack, topCard, currentColor);
-        toast("AI goes first. Press any key...", C_GRAY, 500);
+        toast("AI 先出牌, 按任意键继续...", C_GRAY, 500);
         _getch();
     }
 
@@ -494,7 +493,11 @@ int main() {
                                     ? playerHasType(cur, CardType::WildDrawFour)
                                     : playerHasType(cur, CardType::DrawTwo);
                 if (!canStack) {
-                    toast(cur->getName() + " draws " + to_string(drawStack) + "!", C_RED, 1000);
+                    string n = cur->getName();
+                    if (n == "AI-1") n = "AI一号";
+                    else if (n == "AI-2") n = "AI二号";
+                    else if (n == "AI-3") n = "AI三号";
+                    toast(n + " 被罚抽 " + to_string(drawStack) + " 张!", C_RED, 1000);
                     for (int i = 0; i < drawStack; i++)
                         cur->drawCard(deck.draw());
                     drawStack = 0;
@@ -512,7 +515,11 @@ int main() {
 
             if (playIdx == -1) {
                 cur->drawCard(deck.draw());
-                toast(cur->getName() + " draws a card", C_YELLOW, 700);
+                string n = cur->getName();
+                if (n == "AI-1") n = "AI一号";
+                else if (n == "AI-2") n = "AI二号";
+                else if (n == "AI-3") n = "AI三号";
+                toast(n + " 抽了一张牌", C_YELLOW, 700);
             } else {
                 Card played = cur->playCard(playIdx);
                 deck.addDiscard(played);
@@ -533,13 +540,26 @@ int main() {
                     for (int i = 1; i < 4; i++) if (cnt[i] > cnt[best]) best = i;
                     Color cols[] = {Color::Red, Color::Yellow, Color::Green, Color::Blue};
                     currentColor = cols[best];
-                    toast(ai->getName() + "->" + colorNameShort(currentColor), colorCode(currentColor), 700);
+                    string cname; switch (currentColor) {
+                        case Color::Red: cname = "红"; break;
+                        case Color::Yellow: cname = "黄"; break;
+                        case Color::Green: cname = "绿"; break;
+                        case Color::Blue: cname = "蓝"; break;
+                        default: cname = "?"; break;
+                    }
+                    toast(ai->getName() + " 选了 " + cname + "色", colorCode(currentColor), 700);
                 } else {
                     currentColor = played.color;
                 }
 
                 executeEffect(played);
-                if (cur->getHandCount() == 1) toast(ai->getName() + " UNO!", C_YELLOW, 700);
+                if (cur->getHandCount() == 1) {
+                    string n = ai->getName();
+                    if (n == "AI-1") n = "AI一号";
+                    else if (n == "AI-2") n = "AI二号";
+                    else if (n == "AI-3") n = "AI三号";
+                    toast(n + " 喊 UNO!", C_YELLOW, 700);
+                }
                 if (cur->getHandCount() == 0) { gameOver = true; break; }
             }
 
@@ -565,16 +585,16 @@ int main() {
         if (input.empty()) continue;
 
         if (input == "q" || input == "Q") {
-            toast("Goodbye!", C_YELLOW, 600);
+            toast("再见!", C_YELLOW, 600);
             break;
         }
         if (input == "d" || input == "D") {
             if (drawStack == 0 && hasDrawnThisTurn) {
-                toast("Already drew once this turn!", C_RED, 700);
+                toast("本回合已抽过牌!", C_RED, 700);
                 continue;
             }
             if (drawStack > 0) {
-                toast("Drawing " + to_string(drawStack) + " penalty cards...", C_RED, 1000);
+                toast("正在抽 " + to_string(drawStack) + " 张罚牌...", C_RED, 1000);
                 for (int i = 0; i < drawStack; i++)
                     cur->drawCard(deck.draw());
                 drawStack = 0;
@@ -583,12 +603,12 @@ int main() {
             }
             cur->drawCard(deck.draw());
             hasDrawnThisTurn = true;
-            toast("Drew 1 card.", C_YELLOW, 600);
+            toast("抽了 1 张牌", C_YELLOW, 600);
             continue;
         }
         if (input == "p" || input == "P") {
             if (hasDrawnThisTurn && drawStack == 0) { advanceTurn(); continue; }
-            toast("Can't pass yet. Play a card or draw.", C_RED, 600);
+            toast("还不能结束, 请出牌或抽牌", C_RED, 600);
             continue;
         }
 
@@ -596,10 +616,10 @@ int main() {
             int idx = stoi(input);
             auto &hand = cur->getHand();
             if (idx < 0 || idx >= (int)hand.size()) {
-                toast("Invalid index: " + to_string(idx), C_RED, 600); continue;
+                toast("无效的编号: " + to_string(idx), C_RED, 600); continue;
             }
             if (!canPlayCard(hand[idx], topCard, currentColor, drawStack)) {
-                toast("Cannot play that card here!", C_RED, 600); continue;
+                toast("这张牌不能出!", C_RED, 600); continue;
             }
 
             Card played = cur->playCard(idx);
@@ -612,29 +632,34 @@ int main() {
                 currentColor = played.color;
 
             executeEffect(played);
-            if (cur->getHandCount() == 1) toast("UNO! One card left!", C_YELLOW, 800);
+            if (cur->getHandCount() == 1) toast("UNO! 你只剩一张牌了!", C_YELLOW, 800);
             if (cur->getHandCount() == 0) { gameOver = true; break; }
 
             advanceTurn();
         } catch (...) {
-            toast("Invalid input. Type a number, d, p, or q.", C_RED, 600);
+            toast("输入无效, 请输入数字/d/p/q", C_RED, 600);
         }
     }
 
     cls();
     int midX = CON_W / 2;
     setC(C_YELLOW);
-    gotoxy(midX - 12, CON_H / 2 - 2);
-    cout << "====== GAME OVER ======";
+    gotoxy(midX - 8, CON_H / 2 - 2);
+    cout << "====== 游戏结束 ======";
     resetC();
 
     for (auto p : players) {
         if (p->getHandCount() == 0) {
             gotoxy(midX - 12, CON_H / 2);
+            string n = p->getName();
+            if (n == "You") n = "你";
+            else if (n == "AI-1") n = "AI一号";
+            else if (n == "AI-2") n = "AI二号";
+            else if (n == "AI-3") n = "AI三号";
             if (p->getName() == "You") {
-                setC(C_GREEN); cout << ">>>> YOU WIN! <<<<<";
+                setC(C_GREEN); cout << ">>>> 你赢了! <<<<<";
             } else {
-                setC(C_RED); cout << p->getName() << " WINS!";
+                setC(C_RED); cout << n << " 赢了!";
             }
             resetC();
             break;
@@ -642,7 +667,7 @@ int main() {
     }
 
     gotoxy(midX - 10, CON_H / 2 + 2);
-    setC(C_GRAY); cout << "Press any key to exit..."; resetC();
+    setC(C_GRAY); cout << "按任意键退出..."; resetC();
     showCursor();
     _getch();
 
