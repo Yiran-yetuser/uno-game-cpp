@@ -261,6 +261,24 @@
             height: 100% !important;
             object-fit: cover !important;
             display: block !important;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        /* 黄色卡牌：overlay 遮罩压高光（只暗亮部，暗部影响小） */
+        .hand-card-wrap.card-yellow .hand-card-inner {
+            position: relative;
+        }
+        .hand-card-wrap.card-yellow .hand-card-inner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            border-radius: 8px;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+        .hand-card-wrap.card-yellow .hand-card-inner img {
+            filter: contrast(1.4) saturate(1.3);
         }
         /* 图片加载失败时的文字后备 */
         .hand-card-inner .fallback-text {
@@ -747,6 +765,8 @@ class Player {
     count() { return this.hand.length; }
 }
 
+let hasDrawnThisTurn = false;
+
 let game = {
     players: [],
     turn: 0,
@@ -820,6 +840,7 @@ function initGame() {
     game.stack = 0;
     game.isOver = false;
     game.isPicking = false;
+    hasDrawnThisTurn = false;
 
     console.log('=== 游戏初始化完成 ===');
     console.log('玩家手牌数量:', game.players[0].count());
@@ -910,6 +931,7 @@ function updateHand() {
     cards.forEach((card, idx) => {
         const wrap = document.createElement('div');
         wrap.className = 'hand-card-wrap';
+        if (card.col === 'yellow') wrap.classList.add('card-yellow');
 
         const inner = document.createElement('div');
         inner.className = 'hand-card-inner';
@@ -1008,6 +1030,15 @@ function pickColor(col) {
 function drawCard() {
     if (game.isOver || game.isPicking || game.turn !== 0) return;
 
+    // 无罚牌时，一回合只能抽一次
+    if (game.stack === 0) {
+        if (hasDrawnThisTurn) {
+            showToast('⚠️ 一回合只能抽一次牌！');
+            return;
+        }
+        hasDrawnThisTurn = true;
+    }
+
     // 有罚牌
     if (game.stack > 0) {
         showToast('🎴 你抽了 ' + game.stack + ' 张罚牌');
@@ -1086,6 +1117,7 @@ function checkWin() {
 
 function nextTurn() {
     if (game.isOver) return;
+    hasDrawnThisTurn = false;
     advanceTurn();
     refreshUI();
     if (!game.players[game.turn].isHuman) {
