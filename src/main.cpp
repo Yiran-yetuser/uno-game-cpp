@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-// TODO: 实现main函数 - Qt应用程序入口，创建并显示MainWindow
-=======
 #include "game.h"
 #include <iostream>
 #include <windows.h>
@@ -18,4 +15,3 @@ int main()
     std::cin.get();
     return 0;
 }
->>>>>>> dev
