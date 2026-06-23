@@ -17,20 +17,20 @@ Card::~Card()
 bool Card::canPlayOn(const Card &topCard) const
 {
     // 万能牌可以接在任何牌后面
-    if (this->type == CardType::Wild || this->type == CardType::WildDrawFour)
+    if (this->type == CardType::WildDrawFour)
         return true;
-
+    if (this->type == CardType::Wild && topCard.type != CardType::WildDrawFour)
+        return true;
     // 颜色相同可以出
     if (this->color == topCard.color)
         return true;
-
-    // 类型相同可以出（同为 Skip、同为 Reverse 等）
-    if (this->type == topCard.type)
-        return true;
-
     // 同为数字牌且数字相同可以出
     if (this->type == CardType::Number && topCard.type == CardType::Number &&
         this->number == topCard.number)
+        return true;
+
+    // 类型相同可以出（同为 Skip、同为 Reverse 等）
+    if (this->type == topCard.type && this->type != CardType::Number)
         return true;
 
     return false;

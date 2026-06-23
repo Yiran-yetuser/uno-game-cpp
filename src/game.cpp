@@ -87,7 +87,7 @@ bool Game::canPlayCard(Player *p, const Card &play) const
     // 无叠加罚牌，正常匹配规则
     if (play.color == currentColor)
         return true;
-    if (play.type == getTopCard().type)
+    if (play.type == getTopCard().type && play.type != CardType::Number)
         return true;
     if (play.type == CardType::Number && getTopCard().type == CardType::Number && play.number == getTopCard().number)
         return true;
