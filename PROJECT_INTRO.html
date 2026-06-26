@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNO Game — 项目介绍</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+        --bg: #0f1722;
+        --bg-card: #1a2536;
+        --bg-code: #0a121d;
+        --border: #2a3a52;
+        --text: #d8e0eb;
+        --text-dim: #8a9ab3;
+        --red: #e94e4e;
+        --yellow: #f6c63a;
+        --green: #4ed47a;
+        --blue: #4ea0f6;
+        --accent: #6ec6ff;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.7;
+        padding: 0;
+    }
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+    }
+    /* ===== 顶部 Banner ===== */
+    .hero {
+        background: linear-gradient(135deg, #1a472a 0%, #2d5a3d 50%, #1a472a 100%);
+        border-radius: 16px;
+        padding: 50px 40px;
+        margin-bottom: 40px;
+        border: 1px solid var(--border);
+        text-align: center;
+    }
+    .hero h1 {
+        font-size: 2.8em;
+        color: #fff;
+        margin-bottom: 12px;
+        letter-spacing: 2px;
+    }
+    .hero .subtitle {
+        color: #a8d8b8;
+        font-size: 1.15em;
+        margin-bottom: 24px;
+    }
+    .badges { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .badge {
+        background: rgba(0,0,0,0.4);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.85em;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    .badge.c { color: #6ec6ff; border-color: #6ec6ff33; }
+    .badge.html { color: #f6c63a; border-color: #f6c63a33; }
+    .badge.game { color: #4ed47a; border-color: #4ed47a33; }
+
+    /* ===== 章节标题 ===== */
+    h2 {
+        color: var(--accent);
+        font-size: 1.6em;
+        margin: 40px 0 16px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border);
+    }
+    h3 {
+        color: var(--yellow);
+        font-size: 1.2em;
+        margin: 24px 0 10px;
+    }
+    h4 {
+        color: var(--green);
+        font-size: 1em;
+        margin: 16px 0 8px;
+        font-family: "Consolas", "Cascadia Code", monospace;
+    }
+    p { margin-bottom: 12px; color: var(--text); }
+    code {
+        background: var(--bg-code);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "Consolas", "Cascadia Code", monospace;
+        color: var(--accent);
+        font-size: 0.9em;
+    }
+    pre {
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        overflow-x: auto;
+        margin: 12px 0 20px;
+        font-family: "Consolas", "Cascadia Code", monospace;
+        font-size: 0.88em;
+        line-height: 1.55;
+    }
+    pre code { background: none; padding: 0; color: var(--text); }
+    .keyword { color: #c586c0; }
+    .type { color: #4ec9b0; }
+    .comment { color: #6a9955; }
+    .string { color: #ce9178; }
+    .num { color: #b5cea8; }
+
+    /* ===== 文件结构树 ===== */
+    .tree {
+        background: var(--bg-code);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 20px;
+        font-family: "Consolas", monospace;
+        font-size: 0.9em;
+        line-height: 1.8;
+        color: var(--text);
+        margin: 16px 0 24px;
+        overflow-x: auto;
+    }
+    .tree .dir { color: var(--accent); font-weight: bold; }
+    .tree .file { color: var(--green); }
+    .tree .file-html { color: var(--yellow); }
+    .tree .file-md { color: #c586c0; }
+
+    /* ===== 表格 ===== */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+        font-size: 0.92em;
+    }
+    th, td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+    th { background: var(--bg-card); color: var(--accent); }
+    td { color: var(--text); }
+    tr:hover td { background: rgba(110, 198, 255, 0.04); }
+
+    /* ===== 类卡片 ===== */
+    .class-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: 8px;
+        padding: 18px 22px;
+        margin: 16px 0;
+    }
+    .class-card.red { border-left-color: var(--red); }
+    .class-card.yellow { border-left-color: var(--yellow); }
+    .class-card.green { border-left-color: var(--green); }
+    .class-card.blue { border-left-color: var(--blue); }
+    .class-card .name {
+        font-family: "Consolas", monospace;
+        color: var(--accent);
+        font-size: 1.15em;
+        font-weight: bold;
+        margin-bottom: 6px;
+    }
+    .class-card.red .name { color: var(--red); }
+    .class-card.yellow .name { color: var(--yellow); }
+    .class-card.green .name { color: var(--green); }
+    .class-card.blue .name { color: var(--blue); }
+    .class-card .meta {
+        font-size: 0.85em;
+        color: var(--text-dim);
+        margin-bottom: 10px;
+    }
+
+    /* ===== 流程图 ===== */
+    .flow {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        margin: 12px 0;
+        font-family: "Consolas", monospace;
+        font-size: 0.88em;
+        text-align: center;
+        color: var(--text);
+    }
+    .flow .arrow { color: var(--accent); font-size: 1.4em; margin: 4px 0; }
+
+    /* ===== 颜色样本 ===== */
+    .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+    .swatch.red { background: var(--red); }
+    .swatch.yellow { background: var(--yellow); }
+    .swatch.green { background: var(--green); }
+    .swatch.blue { background: var(--blue); }
+
+    /* ===== 提示框 ===== */
+    .tip {
+        background: rgba(110, 198, 255, 0.08);
+        border-left: 3px solid var(--accent);
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin: 12px 0;
+        font-size: 0.92em;
+    }
+    .warn {
+        background: rgba(246, 198, 58, 0.08);
+        border-left: 3px solid var(--yellow);
+        padding: 12px 16px;
+        border-radius: 4px;
+        margin: 12px 0;
+        font-size: 0.92em;
+    }
+
+    /* ===== Footer ===== */
+    footer {
+        text-align: center;
+        margin-top: 60px;
+        color: var(--text-dim);
+        font-size: 0.85em;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+</style>
+</head>
+<body>
+<div class="container">
+
+    <!-- ========== 顶部 Banner ========== -->
+    <div class="hero">
+        <h1>🎴 UNO 纸牌游戏</h1>
+        <p class="subtitle">一个支持 C++ 控制台 + HTML 浏览器的双前端 UNO 实现</p>
+        <div class="badges">
+            <span class="badge c">C++</span>
+            <span class="badge c">CMake</span>
+            <span class="badge html">HTML5</span>
+            <span class="badge html">CSS3</span>
+            <span class="badge game">1v3 AI</span>
+            <span class="badge game">GBK 编码</span>
+        </div>
+    </div>
+
+    <!-- ========== 项目简介 ========== -->
+    <h2>📖 项目简介</h2>
+    <p>
+        本项目实现了一个完整的 UNO 纸牌游戏，提供<b>两种独立的玩法界面</b>：底层游戏规则用 <b>C++</b> 实现为可复用的类库，
+        同一个核心规则被两种不同的 UI 前端调用。
+    </p>
+    <table>
+        <tr>
+            <th>前端</th>
+            <th>入口文件</th>
+            <th>界面</th>
+            <th>玩家操作</th>
+        </tr>
+        <tr>
+            <td>C++ 控制台 (v0.0.2)</td>
+            <td><code>console_ui.cpp</code></td>
+            <td>四方位布局 + 中文</td>
+            <td>数字 + d / p / q</td>
+        </tr>
+        <tr>
+            <td>HTML 浏览器 (v0.0.1)</td>
+            <td><code>uno-game.html</code></td>
+            <td>四方位 + 真实卡图</td>
+            <td>鼠标点击 / 键盘数字</td>
+        </tr>
+        <tr>
+            <td>单文件 HTML 发布版</td>
+            <td><code>uno-game-standalone.html</code></td>
+            <td>同上，图片已 base64 内嵌</td>
+            <td>同上，零依赖</td>
+        </tr>
+    </table>
+
+    <!-- ========== 项目结构 ========== -->
+    <h2>📁 项目结构</h2>
+    <div class="tree">
+<pre>uno-game-cpp/
+├── <span class="dir">include/</span>            <span class="comment"># 头文件（类定义）</span>
+│   ├── <span class="file">card.h</span>          <span class="comment"># Card 类 + Color / CardType 枚举</span>
+│   ├── <span class="file">player.h</span>        <span class="comment"># Player 玩家基类</span>
+│   ├── <span class="file">ai_player.h</span>     <span class="comment"># AIPlayer 继承自 Player</span>
+│   ├── <span class="file">deck.h</span>          <span class="comment"># Deck 牌堆类</span>
+│   └── <span class="file">game.h</span>          <span class="comment"># Game 顶层调度类</span>
+│
+├── <span class="dir">src/</span>                <span class="comment"># 实现文件</span>
+│   ├── <span class="file">card.cpp</span>         <span class="comment"># Card::canPlayOn 出牌规则</span>
+│   ├── <span class="file">player.cpp</span>       <span class="comment"># Player 抽牌/出牌/打印</span>
+│   ├── <span class="file">ai_player.cpp</span>    <span class="comment"># AI 出牌策略（基础版）</span>
+│   ├── <span class="file">deck.cpp</span>         <span class="comment"># 108 张牌生成 + 洗牌 + 弃牌回收</span>
+│   ├── <span class="file">game.cpp</span>         <span class="comment"># 主循环、罚牌叠加、AI 增强策略</span>
+│   └── <span class="file">main.cpp</span>         <span class="comment"># 文本模式入口（已不直接使用）</span>
+│
+├── <span class="dir">Cards/</span>             <span class="comment"># HTML 端使用的 60+ 张真实 UNO 卡图</span>
+│   ├── 0.jpg
+│   ├── QQ图片20140507014646.jpg   <span class="comment"># 万能+4</span>
+│   ├── QQ图片20140507014655.jpg   <span class="comment"># 牌背</span>
+│   └── ...
+│
+├── <span class="file-html">uno-game.html</span>            <span class="comment"># HTML 版（含 Cards/ 引用）</span>
+├── <span class="file-html">uno-game-standalone.html</span>  <span class="comment"># 单文件发布版（图片 base64 内嵌）</span>
+├── <span class="file">console_ui.cpp</span>     <span class="comment"># 控制台版入口（独立调用 src/ 类）</span>
+│
+├── <span class="file">CMakeLists.txt</span>     <span class="comment"># 构建脚本</span>
+├── <span class="file-md">README.md</span>          <span class="comment"># GitHub 仓库介绍</span>
+├── <span class="file-md">UNO_GAME_DOCS.md</span>  <span class="comment"># 详细技术文档</span>
+└── <span class="file">控制台版技术文档.docx</span></pre>
+    </div>
+
+    <!-- ========== 核心类与算法 ========== -->
+    <h2>🏗️ 核心类与算法</h2>
+    <p>整个项目采用经典的<b>面向对象分层</b>架构，从下到上依次是：</p>
+    <div class="flow">
+        Card（数据）→ Deck（牌堆）→ Player / AIPlayer（玩家）→ Game（调度）<br>
+        <span class="arrow">↑</span><br>
+        console_ui.cpp / uno-game.html（UI 层）
+    </div>
+
+    <!-- ===== Card ===== -->
+    <h3>1. Card 类 — 数据基石</h3>
+    <div class="class-card red">
+        <div class="name">class Card</div>
+        <div class="meta">include/card.h · src/card.cpp · 78 行</div>
+        <p>用 <code>enum class</code> 严格枚举 <code>Color</code> 和 <code>CardType</code>，杜绝魔法字符串。</p>
+<pre><code><span class="keyword">enum class</span> <span class="type">Color</span>  { Red, Yellow, Green, Blue, Wild };
+<span class="keyword">enum class</span> <span class="type">CardType</span> { Number, Skip, Reverse, DrawTwo, Wild, WildDrawFour };</code></pre>
+        <p>每张牌只占 <b>8 字节</b>（1 字节 Color + 1 字节 Type + 4 字节 int + 2 字节 padding），整副 108 张牌 ≈ 864 字节，内存极省。</p>
+
+        <h4>核心算法：canPlayOn()</h4>
+<pre><code><span class="type">bool</span> Card::canPlayOn(<span class="keyword">const</span> Card &amp;top) <span class="keyword">const</span> {
+    <span class="keyword">if</span> (type == <span class="type">CardType</span>::WildDrawFour) <span class="keyword">return</span> <span class="num">true</span>;
+    <span class="keyword">if</span> (type == <span class="type">CardType</span>::Wild &amp;&amp; top.type != WildDrawFour) <span class="keyword">return</span> <span class="num">true</span>;
+    <span class="keyword">if</span> (color == top.color) <span class="keyword">return</span> <span class="num">true</span>;
+    <span class="keyword">if</span> (type == Number &amp;&amp; top.type == Number &amp;&amp; number == top.number) <span class="keyword">return</span> <span class="num">true</span>;
+    <span class="keyword">if</span> (type == top.type &amp;&amp; type != Number) <span class="keyword">return</span> <span class="num">true</span>;
+    <span class="keyword">return</span> <span class="num">false</span>;
+}</code></pre>
+        <p>四步短路判断：① 万能+4 必可出 ② 万能牌（非 +4 之上）可出 ③ 同色 ④ 数字牌同号 ⑤ 同类型非数字牌。</p>
+    </div>
+
+    <!-- ===== Deck ===== -->
+    <h3>2. Deck 类 — 牌堆管理</h3>
+    <div class="class-card yellow">
+        <div class="name">class Deck</div>
+        <div class="meta">include/deck.h · src/deck.cpp · 83 行</div>
+        <p>内部维护 <code>drawPile</code>（抽牌堆）和 <code>discardPile</code>（弃牌堆）两个 <code>vector&lt;Card&gt;</code>。</p>
+
+        <h4>算法 1：buildFullDeck() — 标准 108 张生成</h4>
+<pre><code><span class="comment">// 4 色 × 数字牌: 0×1 + 1-9×2 = 19 张/色  → 76 张
+// 4 色 × 功能牌: Skip/Reverse/DrawTwo ×2 = 6 张/色  → 24 张
+// Wild × 4 + WildDrawFour × 4 = 8 张
+// 合计 76 + 24 + 8 = 108 张</span></code></pre>
+
+        <h4>算法 2：shuffle() — Fisher-Yates 洗牌</h4>
+<pre><code><span class="type">void</span> Deck::shuffle(<span class="type">std</span>::<span class="type">vector</span>&lt;Card&gt; &amp;pile) {
+    <span class="type">std</span>::mt19937 rng(<span class="keyword">static_cast</span>&lt;<span class="type">unsigned</span>&gt;(<span class="type">time</span>(<span class="num">nullptr</span>)));
+    <span class="type">std</span>::shuffle(pile.begin(), pile.end(), rng);
+}</code></pre>
+        <p>使用 <code>std::shuffle</code>，底层是 O(n) 的 Fisher-Yates，每张牌出现在每个位置的概率严格相等 ≈ 1/108。</p>
+
+        <h4>算法 3：reshuffleDiscard() — 弃牌回收</h4>
+<pre><code><span class="type">void</span> Deck::reshuffleDiscard() {
+    <span class="keyword">if</span> (discardPile.size() &lt;= <span class="num">1</span>) <span class="keyword">return</span>;
+    Card top = discardPile.back();      <span class="comment">// 保留顶牌</span>
+    drawPile.insert(drawPile.end(),
+                    discardPile.begin(),
+                    discardPile.end() - <span class="num">1</span>);
+    discardPile.clear();
+    discardPile.push_back(top);
+    shuffle(drawPile);
+}</code></pre>
+        <p>关键点：<b>保留弃牌堆顶牌</b>（它是当前生效的底牌），其余所有牌回收并重新洗牌。这样抽牌堆耗尽时游戏可以无限继续。</p>
+    </div>
+
+    <!-- ===== Player / AIPlayer ===== -->
+    <h3>3. Player / AIPlayer — 玩家基类与 AI</h3>
+    <div class="class-card green">
+        <div class="name">class Player  →  class AIPlayer : public Player</div>
+        <div class="meta">include/player.h, ai_player.h · src/player.cpp, ai_player.cpp</div>
+        <p><code>Player</code> 只负责手牌容器：<code>drawCard()</code>、<code>playCard(idx)</code>、<code>getHandCount()</code>，逻辑最纯粹。</p>
+        <p><code>AIPlayer</code> 通过继承复用 Player 的全部能力，只新增 <code>chooseCard()</code> 一个决策方法：</p>
+<pre><code><span class="type">int</span> AIPlayer::chooseCard(<span class="keyword">const</span> Card &amp;topCard) <span class="keyword">const</span> {
+    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="num">0</span>; i &lt; hand.size(); ++i) {
+        <span class="keyword">if</span> (hand[i].canPlayOn(topCard)) <span class="keyword">return</span> i;
+    }
+    <span class="keyword">return</span> -<span class="num">1</span>;
+}</code></pre>
+        <p>AI 类本身是<b>最朴素</b>的"出第一张合法牌"策略，而 <b>更智能的策略</b>写在 <code>Game::gameLoop()</code> 里的 AI 回合分支中（见下文）。</p>
+    </div>
+
+    <!-- ===== Game ===== -->
+    <h3>4. Game 类 — 顶层调度与规则仲裁</h3>
+    <div class="class-card blue">
+        <div class="name">class Game</div>
+        <div class="meta">include/game.h · src/game.cpp · 367 行</div>
+
+        <h4>状态字段</h4>
+<pre><code>Deck deck;                 <span class="comment">// 牌堆</span>
+<span class="type">std</span>::<span class="type">vector</span>&lt;Player*&gt; players;  <span class="comment">// [人类, AI1, AI2, AI3]</span>
+Card topCard;              <span class="comment">// 弃牌堆顶</span>
+Color currentColor;        <span class="comment">// 实际生效的颜色（万能牌选色后可能 ≠ topCard.color）</span>
+<span class="type">int</span> currentPlayerIdx;     <span class="comment">// 当前玩家下标</span>
+<span class="type">int</span> direction;            <span class="comment">// 1=顺时针, -1=逆时针</span>
+<span class="type">int</span> drawStack;            <span class="comment">// 叠加罚牌总数</span></code></pre>
+
+        <h4>核心算法 1：canPlayCard() — 出牌合法性仲裁</h4>
+<pre><code><span class="type">bool</span> Game::canPlayCard(Player *p, <span class="keyword">const</span> Card &amp;play) <span class="keyword">const</span> {
+    <span class="comment">// 罚牌叠加态：+4 之上只能叠 +4，+2 之上可叠 +2 或 +4</span>
+    <span class="keyword">if</span> (drawStack &gt; <span class="num">0</span>) {
+        <span class="keyword">if</span> (drawStack &gt;= <span class="num">4</span>) <span class="keyword">return</span> play.type == <span class="type">CardType</span>::WildDrawFour;
+        <span class="keyword">else</span> <span class="keyword">return</span> play.type == DrawTwo || play.type == WildDrawFour;
+    }
+    <span class="comment">// 正常态：委托给 Card::canPlayOn</span>
+    <span class="keyword">return</span> play.canPlayOn(topCard);
+}</code></pre>
+        <p>这一层比 <code>Card::canPlayOn</code> <b>更严格</b>：当场上存在叠加罚牌时，强制只能出对应类型，避免非法叠加（+4 上不能叠 +2）。</p>
+
+        <h4>核心算法 2：executeEffect() — 出牌后效果</h4>
+<pre><code><span class="type">void</span> Game::executeEffect(<span class="keyword">const</span> Card &amp;played) {
+    <span class="keyword">switch</span> (played.type) {
+    <span class="keyword">case</span> <span class="type">CardType</span>::Skip:    nextPlayer();                <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="type">CardType</span>::Reverse: direction *= -<span class="num">1</span>;            <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="type">CardType</span>::DrawTwo:  drawStack += <span class="num">2</span>;             <span class="keyword">break</span>;
+    <span class="keyword">case</span> <span class="type">CardType</span>::WildDrawFour: drawStack += <span class="num">4</span>;         <span class="keyword">break</span>;
+    }
+}</code></pre>
+        <p>Skip 的"跳过"实现得很巧妙：<b>先调用一次 nextPlayer()</b> 跳到下一位，然后本回合正常走 nextPlayer()，等于多走了一格，等价于"被跳过"。</p>
+
+        <h4>核心算法 3：gameLoop() 主循环</h4>
+        <div class="flow">
+            翻开局顶牌（优先数字）→ 随机先手 → 进入循环<br>
+            <span class="arrow">↓</span><br>
+            玩家分支：<code>cin</code> 读序号 → canPlayCard 校验 → playCard → 选色（如万能）→ executeEffect<br>
+            <span class="arrow">↓</span><br>
+            AI 分支：<b>智能策略</b>（见下） → 选色（选手牌最多色）→ executeEffect<br>
+            <span class="arrow">↓</span><br>
+            罚牌叠加处理 → nextPlayer() → 循环直到 checkWin()
+        </div>
+
+        <h4>核心算法 4：AI 智能出牌策略（Game::gameLoop 内嵌）</h4>
+<pre><code><span class="comment">// AI 智能评分，按"分数最高"选择出牌</span>
+<span class="type">int</span> score = <span class="num">0</span>;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::Number)       score = card.number;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::DrawTwo)     score = <span class="num">20</span>;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::Skip)       score = <span class="num">20</span>;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::Reverse)    score = <span class="num">20</span>;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::Wild)       score = <span class="num">50</span>;
+<span class="keyword">if</span> (card.type == <span class="type">CardType</span>::WildDrawFour) score = <span class="num">50</span>;
+<span class="comment">// 同分时优先出当前 currentColor 的数字</span>
+<span class="keyword">if</span> (card.color == currentColor) score += <span class="num">2</span>;</code></pre>
+        <p>策略：<b>优先甩大点 / 功能牌 / 万能牌</b>，其次才出同色数字牌，保留小点数作为后手。这比 AIPlayer::chooseCard 的"出第一张合法"更聪明。</p>
+
+        <h4>核心算法 5：AI 万能牌选色</h4>
+<pre><code><span class="comment">// AI 出完万能/万能+4 后，选手牌里数量最多的那个颜色</span>
+<span class="type">int</span> cntR=<span class="num">0</span>, cntY=<span class="num">0</span>, cntG=<span class="num">0</span>, cntB=<span class="num">0</span>;
+<span class="keyword">for</span> (<span class="keyword">auto</span> &amp;c : ai-&gt;getHand()) {
+    <span class="keyword">switch</span> (c.color) {
+        <span class="keyword">case</span> Red: cntR++; <span class="keyword">break</span>;
+        <span class="keyword">case</span> Yellow: cntY++; <span class="keyword">break</span>;
+        ...
+    }
+}
+currentColor = (cntR&gt;cntY&amp;&amp;cntR&gt;cntG&amp;&amp;cntR&gt;cntB) ? Red : ...;</code></pre>
+    </div>
+
+    <!-- ===== UI 层 ===== -->
+    <h3>5. UI 层 — 两套独立前端</h3>
+
+    <h4>console_ui.cpp (C++ 控制台)</h4>
+    <ul style="margin-left: 24px; margin-bottom: 14px;">
+        <li>设置 <code>SetConsoleOutputCP(936)</code> + GBK 编码，与 src/ 的 GBK 源码一致</li>
+        <li>使用 Windows Console API：<code>SetConsoleCursorPosition</code> 实现任意坐标输出</li>
+        <li><code>SetConsoleTextAttribute</code> 控制颜色（12=红 / 14=黄 / 10=绿 / 11=蓝）</li>
+        <li><code>_getch()</code> 替代 <code>cin</code> 实现"按键即响应"，避免回车确认</li>
+        <li>四方位布局：AI 一号在左、AI 二号在上、AI 三号在右、玩家在下</li>
+        <li>ASCII 字符画框（<code>+</code>、<code>-</code>、<code>|</code>、<code>=</code>）保证任意代码页都不乱码</li>
+        <li><code>toString()</code> 返回中文（如"红5"、"蓝跳过"），控制台正确显示</li>
+    </ul>
+
+    <h4>uno-game.html (HTML 浏览器)</h4>
+    <ul style="margin-left: 24px; margin-bottom: 14px;">
+        <li>使用 <code>Cards/</code> 目录中 60+ 张真实 UNO 卡图，按 <code>color_name</code> 命名映射</li>
+        <li><code>uno-game-standalone.html</code> 把所有图片转 base64 内嵌，发布版零依赖</li>
+        <li>CSS 用 <code>position: absolute</code> 配合 <code>top/left/right/bottom</code> 实现四方位</li>
+        <li>JavaScript <code>GameState</code> 对象保存 <code>players / topCard / currentColor / direction</code> 等</li>
+        <li>Web Audio API 生成出牌/抽牌/反转/UNO 等音效</li>
+    </ul>
+
+    <!-- ========== 玩法规则 ========== -->
+    <h2>🎮 UNO 玩法规则</h2>
+    <table>
+        <tr><th>卡牌</th><th>示例</th><th>规则</th></tr>
+        <tr>
+            <td>数字牌 (0-9)</td>
+            <td><span class="swatch red"></span><span class="swatch yellow"></span><span class="swatch green"></span><span class="swatch blue"></span>0~9</td>
+            <td>同色或同号可接</td>
+        </tr>
+        <tr>
+            <td>Skip 跳过</td>
+            <td>⊘</td>
+            <td>下一位本轮跳过</td>
+        </tr>
+        <tr>
+            <td>Reverse 反转</td>
+            <td>⇄</td>
+            <td>出牌顺序反转（2 人时等同跳过）</td>
+        </tr>
+        <tr>
+            <td>Draw Two +2</td>
+            <td>+2</td>
+            <td>下一家罚抽 2 张，可继续叠加 +2 / +4</td>
+        </tr>
+        <tr>
+            <td>Wild 万能</td>
+            <td>W</td>
+            <td>选下一轮颜色</td>
+        </tr>
+        <tr>
+            <td>Wild +4</td>
+            <td>+4</td>
+            <td>选色 + 罚抽 4 张，<b>仅在 +4 之上</b>可继续叠 +4</td>
+        </tr>
+    </table>
+
+    <div class="warn">
+        <b>注意：</b>+4 叠加规则 —— 已有 +4 时<b>不能再出 +2</b>，只能出 +4 继续叠加或选择受罚。这是 UNO 的标准规则。
+    </div>
+
+    <!-- ========== 构建与运行 ========== -->
+    <h2>🛠️ 构建与运行</h2>
+
+    <h3>C++ 控制台版</h3>
+<pre><code><span class="comment"># 需要 CMake + MinGW/MSVC</span>
+cd build
+cmake ..
+cmake --build . --target uno-console
+./uno-console.exe</code></pre>
+
+    <h3>HTML 浏览器版</h3>
+<pre><code><span class="comment"># 方式 1：直接双击 uno-game.html（需同目录有 Cards/）</span>
+<span class="comment"># 方式 2：使用单文件版（双击即用，零依赖）</span>
+uno-game-standalone.html</code></pre>
+
+    <h3>CMakeLists.txt 关键内容</h3>
+<pre><code><span class="comment"># 三个可执行目标</span>
+add_executable(uno-game-cpp
+    src/main.cpp src/card.cpp src/player.cpp
+    src/ai_player.cpp src/deck.cpp src/game.cpp)
+
+add_executable(uno-console
+    console_ui.cpp src/card.cpp src/player.cpp
+    src/ai_player.cpp src/deck.cpp src/game.cpp)</code></pre>
+
+    <!-- ========== 关键设计 ========== -->
+    <h2>💡 关键设计决策</h2>
+    <div class="tip">
+        <b>分层架构</b>：Card/Deck/Player/AIPlayer/Game 五层，每层只依赖下层。修改任一层不会波及其他层。
+    </div>
+    <div class="tip">
+        <b>currentColor 与 topCard.color 解耦</b>：万能牌打出后，用户选的"下家颜色"与 topCard.color 不同，单独用 currentColor 字段记录，UI 渲染与出牌规则都基于 currentColor。
+    </div>
+    <div class="tip">
+        <b>GBK 编码贯穿</b>：src/ 源文件全部 GBK 编码，控制台设 CP936，与 Windows 中文环境天然兼容，无需 BOM、无需 pragma。
+    </div>
+    <div class="tip">
+        <b>惩罚叠加用整数计数</b>：用 drawStack 累加 +2/+4，无需复杂的"链式"数据结构，规则逻辑写在 canPlayCard 的第一段。
+    </div>
+
+    <footer>
+        <p>UNO 纸牌游戏 · v0.0.2 · C++ & HTML 双前端实现</p>
+        <p>项目地址：<code>https://github.com/Yiran-yetuser/uno-game-cpp</code></p>
+    </footer>
+
+</div>
+</body>
+</html>
